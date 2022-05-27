@@ -12,7 +12,8 @@
     "@types/json-schema": "^7.0.11",
     "ajv": "^8.11.0",
     "js-yaml": "^4.1.0",
-    "json-schema-to-typescript": "^10.1.5"
+    "json-schema-to-typescript": "^10.1.5",
+    "openapi-types": "^11.0.1"
   },
   "devDependencies": {
     "@lifeomic/eslint-config-standards": "^2.1.1",
@@ -35,6 +36,7 @@
     "koa": "^2.13.4",
     "koa-bodyparser": "^4.3.0",
     "koa-router": "^10.1.1",
+    "openapi-schema-validator": "^11.0.1",
     "prettier": "^2.6.2",
     "semantic-release": "^19.0.2",
     "tmp": "^0.2.1",
