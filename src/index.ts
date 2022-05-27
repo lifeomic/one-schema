@@ -1,3 +1,4 @@
+export * from './koa';
 export * from './types';
 
 // We intentionally avoid exposing codegen-related modules here,
