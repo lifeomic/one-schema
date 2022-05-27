@@ -8,6 +8,10 @@ on:
 jobs:
   main:
     runs-on: ubuntu-latest
+    environment: npm
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NPM_TOKEN: ${{ secrets.LIFEOMIC_NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -15,8 +19,12 @@ jobs:
           node-version: 14
       - name: Test and Build
         run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
           yarn
           yarn lint
           yarn test
           yarn build
-      # TODO: release
+      - name: Publish
+        run: |
+          yarn semantic-release
+          npm access grant read-only lifeomic:readonly-developers '@lifeomic/one-schema'
