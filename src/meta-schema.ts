@@ -33,7 +33,7 @@ const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
         '.*': {
           type: 'object',
           additionalProperties: false,
-          required: ['Name', 'Request', 'Response'],
+          required: ['Name', 'Response'],
           properties: {
             Name: { type: 'string', pattern: '[a-zA-Z0-9]+' },
             Request: {
@@ -52,6 +52,11 @@ const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
 };
 
 export const validateSchema = (spec: OneSchemaDefinition) => {
+  const ajv = new Ajv();
+  if (!ajv.validate(ONE_SCHEMA_META_SCHEMA, spec)) {
+    throw new Error('Detected invalid schema: ' + ajv.errorsText(ajv.errors));
+  }
+
   for (const [name, { Request }] of Object.entries(spec.Endpoints)) {
     if (Request) {
       // Requests must be object type.
@@ -161,11 +166,6 @@ export const loadSchemaFromFile = (
   assumptions: SchemaAssumptions = DEFAULT_ASSUMPTIONS,
 ): OneSchemaDefinition => {
   const spec = load(readFileSync(filename, { encoding: 'utf-8' }));
-
-  const ajv = new Ajv();
-  if (!ajv.validate(ONE_SCHEMA_META_SCHEMA, spec)) {
-    throw new Error('Detected invalid schema: ' + ajv.errorsText(ajv.errors));
-  }
 
   validateSchema(spec as OneSchemaDefinition);
 
