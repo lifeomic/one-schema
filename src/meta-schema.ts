@@ -14,10 +14,22 @@ export const getPathParams = (name: string) =>
     .map((part) => part.replace(':', ''));
 
 const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
+  definitions: {
+    MetaConfig: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        PackageJSON: { type: 'object' },
+      },
+    },
+  },
   type: 'object',
   additionalProperties: false,
   required: ['Endpoints'],
   properties: {
+    Meta: {
+      $ref: '#/definitions/MetaConfig',
+    },
     Resources: {
       type: 'object',
       patternProperties: {

@@ -4,12 +4,13 @@ exports[`input validation snapshots bogus command name 1`] = `
 "cli.ts <command>
 
 Commands:
-  cli.ts generate-axios-client   Generates an Axios client using the specified
-                                 schema and options.
-  cli.ts generate-api-types      Generates API types using the specified schema
-                                 and options.
-  cli.ts generate-open-api-spec  Generates an OpenAPI v3.1.0 spec using the
-                                 specified schema and options.
+  cli.ts generate-axios-client        Generates an Axios client using the
+                                      specified schema and options.
+  cli.ts generate-api-types           Generates API types using the specified
+                                      schema and options.
+  cli.ts generate-open-api-spec       Generates an OpenAPI v3.1.0 spec using the
+                                      specified schema and options.
+  cli.ts generate-publishable-schema  Generates a publishable schema artifact.
 
 Options:
   --help     Show help                                                 [boolean]
@@ -22,12 +23,13 @@ exports[`input validation snapshots empty input 1`] = `
 "cli.ts <command>
 
 Commands:
-  cli.ts generate-axios-client   Generates an Axios client using the specified
-                                 schema and options.
-  cli.ts generate-api-types      Generates API types using the specified schema
-                                 and options.
-  cli.ts generate-open-api-spec  Generates an OpenAPI v3.1.0 spec using the
-                                 specified schema and options.
+  cli.ts generate-axios-client        Generates an Axios client using the
+                                      specified schema and options.
+  cli.ts generate-api-types           Generates API types using the specified
+                                      schema and options.
+  cli.ts generate-open-api-spec       Generates an OpenAPI v3.1.0 spec using the
+                                      specified schema and options.
+  cli.ts generate-publishable-schema  Generates a publishable schema artifact.
 
 Options:
   --help     Show help                                                 [boolean]

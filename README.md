@@ -191,6 +191,35 @@ const server = new Koa()
   .listen();
 ```
 
+### Distributing Schemas
+
+Use the `generate-publishable-schema` command in concert with the `Meta.PackageJSON` entry to generate a ready-to-publish NPM artifact containing the schema.
+
+```yaml
+# schema.yml
+Meta:
+  PackageJSON:
+    name: desired-package-name
+    description: A description of the package
+    # ... any other desired package.json values
+# ...
+```
+
+```bash
+one-schema generate-publishable \
+  --schema schema.yml \
+  --output output-directory
+```
+
+The `output-directory` will have this file structure:
+
+```
+output-directory/
+  package.json
+  schema.json
+  schema.yaml
+```
+
 ### OpenAPI Spec generation
 
 Use the `generate-open-api-spec` command to generate an OpenAPI spec from a simple schema, which may be useful for interfacing with common OpenAPI tooling.

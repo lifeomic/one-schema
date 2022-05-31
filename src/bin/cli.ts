@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { extname } from 'path';
 import yargs = require('yargs');
 import { format, BuiltInParserName } from 'prettier';
@@ -9,6 +9,8 @@ import { generateAxiosClient } from '../generate-axios-client';
 import { generateAPITypes } from '../generate-api-types';
 import { loadSchemaFromFile, SchemaAssumptions } from '../meta-schema';
 import { toOpenAPISpec } from '../openapi';
+import { generatePublishableSchema } from '../generate-publishable-schema';
+import path = require('path');
 
 const getPrettierParser = (outputFilename: string): BuiltInParserName => {
   const extension = extname(outputFilename).replace('.', '');
@@ -25,7 +27,8 @@ const writeGeneratedFile = (
   filepath: string,
   content: string,
   options: { format: boolean },
-) =>
+) => {
+  mkdirSync(path.dirname(filepath), { recursive: true });
   writeFileSync(
     filepath,
     options.format
@@ -33,6 +36,7 @@ const writeGeneratedFile = (
       : content,
     { encoding: 'utf-8' },
   );
+};
 
 const VALID_ASSUMPTION_KEYS: (keyof SchemaAssumptions)[] = [
   'noAdditionalPropertiesOnObjects',
@@ -171,6 +175,25 @@ const program = yargs(process.argv.slice(2))
           : JSON.stringify(openAPISpec, null, 2);
 
       writeGeneratedFile(argv.output, output, { format: argv.format });
+    },
+  )
+  .command(
+    'generate-publishable-schema',
+    'Generates a publishable schema artifact.',
+    getCommonOptions,
+    (argv) => {
+      const spec = loadSchemaFromFile(
+        argv.schema,
+        parseAssumptions(argv.assumptions),
+      );
+
+      const { files } = generatePublishableSchema({ spec });
+
+      for (const [filename, content] of Object.entries(files)) {
+        writeGeneratedFile(path.resolve(argv.output, filename), content, {
+          format: true,
+        });
+      }
     },
   )
   .demandCommand()
