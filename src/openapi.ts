@@ -77,29 +77,32 @@ export const toOpenAPISpec = (
       required: true,
     }));
 
-    if (['GET', 'DELETE'].includes(method)) {
-      // Add the query parameters for GET/DELETE methods
-      for (const [name, schema] of Object.entries(Request.properties ?? {}))
-        parameters.push({
-          in: 'query',
-          name,
-          description: schema.description,
-          schema: { type: 'string' },
-          required:
-            Array.isArray(Request.required) && Request.required.includes(name),
-        });
-    } else {
-      // Add the body spec parameters for non-GET/DELETE methods
-      operation.requestBody = {
-        content: {
-          'application/json': {
-            // @ts-expect-error TS detects a mismatch between the JSONSchema types
-            // between openapi-types and json-schema. Ignore and assume everything
-            // is cool.
-            schema: Request,
+    if (Request) {
+      if (['GET', 'DELETE'].includes(method)) {
+        // Add the query parameters for GET/DELETE methods
+        for (const [name, schema] of Object.entries(Request.properties ?? {}))
+          parameters.push({
+            in: 'query',
+            name,
+            description: schema.description,
+            schema: { type: 'string' },
+            required:
+              Array.isArray(Request.required) &&
+              Request.required.includes(name),
+          });
+      } else {
+        // Add the body spec parameters for non-GET/DELETE methods
+        operation.requestBody = {
+          content: {
+            'application/json': {
+              // @ts-expect-error TS detects a mismatch between the JSONSchema types
+              // between openapi-types and json-schema. Ignore and assume everything
+              // is cool.
+              schema: Request,
+            },
           },
-        },
-      };
+        };
+      }
     }
 
     if (parameters.length) {

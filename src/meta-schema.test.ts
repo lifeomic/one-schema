@@ -173,6 +173,19 @@ describe('loadSchemaFromFile', () => {
 });
 
 describe('validateSchema', () => {
+  test('allows undefined Request schemas', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'POST /posts': {
+            Name: 'something',
+            Response: {},
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
   test('checks for object types in Request schemas', () => {
     expect(() =>
       validateSchema({
