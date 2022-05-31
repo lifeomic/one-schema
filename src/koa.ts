@@ -126,7 +126,11 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
 
       // 3. Return the result and call the next middleware.
       ctx.response.body = response;
-      ctx.response.status = 200;
+      // If the response status is already set to a 200-level code, don't override it.
+      // This is the mechanism for allowing consumers to customize response codes.
+      if (ctx.response.status < 200 || ctx.response.status >= 300) {
+        ctx.response.status = 200;
+      }
       return next();
     };
 
