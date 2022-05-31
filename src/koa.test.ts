@@ -78,4 +78,6 @@ test('setting a 200-level response code overrides the response', async () => {
 
   const createRes = await client.post('/posts');
   expect(createRes.status).toStrictEqual(200);
+
+  server.close();
 });
