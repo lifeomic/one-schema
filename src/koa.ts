@@ -23,7 +23,9 @@ export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
           : { body: EndpointsOf<Schema>[Name]['Request'] };
       }
     >,
-  ) => Promise<EndpointsOf<Schema>[Name]['Response']>;
+  ) =>
+    | EndpointsOf<Schema>[Name]['Response']
+    | Promise<EndpointsOf<Schema>[Name]['Response']>;
 };
 
 /**
