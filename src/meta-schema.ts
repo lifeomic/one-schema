@@ -53,23 +53,49 @@ const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
 
 export const validateSchema = (spec: OneSchemaDefinition) => {
   for (const [name, { Request }] of Object.entries(spec.Endpoints)) {
-    // Requests must be object type.
-    if (Request.type && Request.type !== 'object') {
-      throw new Error(
-        `Detected a non-object Request schema for ${name}. Request schemas must be objects.`,
-      );
-    }
+    if (Request) {
+      // Requests must be object type.
+      if (Request.type && Request.type !== 'object') {
+        throw new Error(
+          `Detected a non-object Request schema for ${name}. Request schemas must be objects.`,
+        );
+      }
 
-    const collidingParam = getPathParams(name).find(
-      (param) => param in (Request.properties ?? {}),
-    );
-
-    if (collidingParam) {
-      throw new Error(
-        `The ${collidingParam} parameter was declared as a path parameter and a Request property for ${name}. Rename either the path parameter or the request property to avoid a collision.`,
+      const collidingParam = getPathParams(name).find(
+        (param) => param in (Request.properties ?? {}),
       );
+
+      if (collidingParam) {
+        throw new Error(
+          `The ${collidingParam} parameter was declared as a path parameter and a Request property for ${name}. Rename either the path parameter or the request property to avoid a collision.`,
+        );
+      }
     }
   }
+};
+
+const transformOneSchema = (
+  spec: OneSchemaDefinition,
+  transform: (schema: JSONSchema4) => JSONSchema4,
+): OneSchemaDefinition => {
+  const copy = deepCopy(spec);
+
+  for (const key in copy.Resources) {
+    copy.Resources[key] = transformJSONSchema(copy.Resources[key], transform);
+  }
+
+  for (const key in copy.Endpoints) {
+    copy.Endpoints[key].Request = transformJSONSchema(
+      copy.Endpoints[key].Request ?? {},
+      transform,
+    );
+    copy.Endpoints[key].Response = transformJSONSchema(
+      copy.Endpoints[key].Response,
+      transform,
+    );
+  }
+
+  return copy;
 };
 
 export type SchemaAssumptions = {
@@ -101,33 +127,20 @@ export const withAssumptions = (
   overrides: SchemaAssumptions = DEFAULT_ASSUMPTIONS,
 ): OneSchemaDefinition => {
   // Deep copy, then apply assumptions.
-  const copy = deepCopy(spec);
+  let copy = deepCopy(spec);
 
   const assumptions = { ...DEFAULT_ASSUMPTIONS, ...overrides };
 
   if (assumptions.noAdditionalPropertiesOnObjects) {
-    const transform = (schema: JSONSchema4) =>
+    copy = transformOneSchema(copy, (schema) =>
       schema.type === 'object'
         ? { additionalProperties: false, ...schema }
-        : schema;
-
-    for (const key in copy.Resources) {
-      copy.Resources[key] = transformJSONSchema(copy.Resources[key], transform);
-    }
-    for (const key in copy.Endpoints) {
-      copy.Endpoints[key].Request = transformJSONSchema(
-        copy.Endpoints[key].Request,
-        transform,
-      );
-      copy.Endpoints[key].Response = transformJSONSchema(
-        copy.Endpoints[key].Response,
-        transform,
-      );
-    }
+        : schema,
+    );
   }
 
   if (assumptions.objectPropertiesRequiredByDefault) {
-    const transform = (schema: JSONSchema4) =>
+    copy = transformOneSchema(copy, (schema) =>
       schema.type === 'object' && schema.properties
         ? {
             required: Object.keys(schema.properties).filter(
@@ -136,21 +149,8 @@ export const withAssumptions = (
             ),
             ...schema,
           }
-        : schema;
-
-    for (const key in copy.Resources) {
-      copy.Resources[key] = transformJSONSchema(copy.Resources[key], transform);
-    }
-    for (const key in copy.Endpoints) {
-      copy.Endpoints[key].Request = transformJSONSchema(
-        copy.Endpoints[key].Request,
-        transform,
-      );
-      copy.Endpoints[key].Response = transformJSONSchema(
-        copy.Endpoints[key].Response,
-        transform,
-      );
-    }
+        : schema,
+    );
   }
 
   return copy;

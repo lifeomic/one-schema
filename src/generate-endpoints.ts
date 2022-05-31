@@ -23,7 +23,7 @@ export const generateEndpointTypes = async ({
           additionalProperties: false,
           required: ['Request', 'PathParams', 'Response'],
           properties: {
-            Request,
+            Request: Request ?? {},
             PathParams: {
               type: 'object',
               additionalProperties: false,

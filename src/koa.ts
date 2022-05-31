@@ -80,15 +80,18 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
     /** A shared route handler. */
     const handler: Router.IMiddleware<State, Context> = async (ctx, next) => {
       // 1. Validate the input data.
-      ctx.request.body = parse(
-        ctx,
-        endpoint,
-        { ...Endpoints[endpoint].Request, definitions: Resources },
-        // 1a. For GET and DELETE, use the query parameters. Otherwise, use the body.
-        ['GET', 'DELETE'].includes(method)
-          ? ctx.request.query
-          : ctx.request.body,
-      );
+      const requestSchema = Endpoints[endpoint].Request;
+      if (requestSchema) {
+        ctx.request.body = parse(
+          ctx,
+          endpoint,
+          { ...requestSchema, definitions: Resources },
+          // 1a. For GET and DELETE, use the query parameters. Otherwise, use the body.
+          ['GET', 'DELETE'].includes(method)
+            ? ctx.request.query
+            : ctx.request.body,
+        );
+      }
 
       // 2. Run the provided route handler.
       const response = await routeHandler(ctx);

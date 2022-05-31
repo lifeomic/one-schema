@@ -25,6 +25,11 @@ describe('generate', () => {
                 },
               },
             },
+            'DELETE /posts/:id': {
+              Name: 'deletePost',
+              Response: {},
+              // Test no Request field
+            },
             'PUT /posts/:id': {
               Name: 'putPost',
               Request: {
@@ -60,6 +65,13 @@ export type Endpoints = {
       output?: string;
     };
   };
+  "DELETE /posts/:id": {
+    Request: unknown;
+    PathParams: {
+      id: string;
+    };
+    Response: unknown;
+  };
   "PUT /posts/:id": {
     Request: {
       message: string;
@@ -90,6 +102,7 @@ export const Schema: OneSchema<Endpoints> = {
         properties: { output: { type: "string" } },
       },
     },
+    "DELETE /posts/:id": { Name: "deletePost", Response: {} },
     "PUT /posts/:id": {
       Name: "putPost",
       Request: {

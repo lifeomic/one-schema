@@ -69,6 +69,12 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
         $ref: '#/definitions/Post',
       },
     },
+    'DELETE /posts/:id': {
+      Name: 'deletePost',
+      Response: {
+        $ref: '#/definitions/Post',
+      },
+    },
   },
 });
 
@@ -177,6 +183,31 @@ describe('toOpenAPISpec', () => {
           },
         },
         '/posts/{id}': {
+          delete: {
+            operationId: 'deletePost',
+            parameters: [
+              {
+                in: 'path',
+                name: 'id',
+                required: true,
+                schema: {
+                  type: 'string',
+                },
+              },
+            ],
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/Post',
+                    },
+                  },
+                },
+                description: 'TODO',
+              },
+            },
+          },
           get: {
             operationId: 'getPostById',
             parameters: [
