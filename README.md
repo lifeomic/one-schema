@@ -45,12 +45,6 @@ Endpoints:
         $ref: '#/definitions/Post'
 ```
 
-### Schema Assumptions
-
-`one-schema` provides a set of JSONSchema assumptions to help simplify Request/Response JSONSchema entries in commonly desired ways.
-
-These assumptions are described by the `SchemaAssumptions` type in [`src/meta-schema.ts`](src/meta-schema.ts) and can be individually or wholly disabled in the Node API and at the command line via the `--asssumptions` flag.
-
 ### Axios Client Generation
 
 Use the `generate-axios-client` command to generate a nicely typed Axios-based client from the schema.
@@ -59,7 +53,6 @@ Use the `generate-axios-client` command to generate a nicely typed Axios-based c
 one-schema generate-axios-client \
   --schema schema.yml \
   --output generated-client.ts \
-  --assumptions all \
   --format
 ```
 
@@ -171,7 +164,6 @@ Use the `generate-api-types` command to generate helpful types to use for server
 one-schema generate-api-types \
   --schema schema.yml \
   --output generated-api.ts \
-  --assumptions all \
   --format
 ```
 
@@ -265,7 +257,6 @@ Use the `generate-open-api-spec` command to generate an OpenAPI spec from a simp
 one-schema generate-open-api-spec \
   --schema schema.yml \
   --output openapi-schema.json \
-  --assumptions all \
   --apiVersion "1.0.0" \
   --apiTitle "Simple API" \
   --format
@@ -362,4 +353,62 @@ The output (in `generated-openapi-schema.json`):
     }
   }
 }
+```
+
+### Schema Assumptions
+
+`one-schema` provides a set of JSONSchema assumptions to help simplify Request/Response JSONSchema entries in commonly desired ways.
+
+These assumptions are described by the `SchemaAssumptions` type in [`src/meta-schema.ts`](src/meta-schema.ts) and can be individually or wholly disabled in the Node API and at the command line via the `--asssumptions` flag.
+
+By default, all assumptions are applied.
+
+#### noAdditionalPropertiesOnObjects
+
+Enabling this assumption will automatically add `additionalProperties: false` to all `object` JSONSchemas. Example:
+
+```yaml
+PUT /posts/:id:
+  Request:
+    type: object
+    properties:
+      message:
+        type: string
+
+# Automatically interpreted as:
+PUT /posts/:id:
+  Request:
+    type: object
+    additionalProperties: false
+    properties:
+      message:
+        type: string
+```
+
+#### objectPropertiesRequiredByDefault
+
+Enabling this assumption will automatically add mark every object property as "required", unless that property's schema has `optional: true` defined. Example:
+
+```yaml
+PUT /posts/:id:
+  Request:
+    type: object
+    properties:
+      message:
+        type: string
+      title:
+        type: string
+        optional: true
+
+# Automatically interpreted as:
+PUT /posts/:id:
+  Request:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+      title:
+        type: string
 ```

@@ -99,7 +99,7 @@ const getCommonOptions = (argv: yargs.Argv) =>
       description:
         "Which JSONSchema assumptions to apply. Must be either 'all', 'none', or a comma-separated list containing one or more of: " +
         VALID_ASSUMPTION_KEYS.join(', '),
-      default: 'none',
+      default: 'all',
     });
 
 const program = yargs(process.argv.slice(2))
