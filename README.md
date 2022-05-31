@@ -162,13 +162,13 @@ If you're building a Koa app, you can use these generated types with the `implem
 import Koa from 'koa';
 import Router from 'koa-router';
 
-import { implementSchema } from 'one-schema';
+import { implementSchema } from '@lifeomic/one-schema';
 
-import { APISchema } from './generated-api.ts';
+import { Schema } from './generated-api.ts';
 
 const router = new Router();
 
-implementSchema(APISchema, {
+implementSchema(Schema, {
   on: router,
   parse: (ctx, endpoint, schema, data) => {
     // validate that `data` matches `schema`, using whatever
