@@ -19,7 +19,7 @@ describe('assumptions', () => {
     expect: OneSchemaDefinition;
   }[] = [
     {
-      name: 'noAdditionalPropertiesOnObjects',
+      name: 'noAdditionalPropertiesOnObjects adds additionalProperties: false to objects',
       input: {
         assumptions: {
           noAdditionalPropertiesOnObjects: true,
@@ -32,8 +32,8 @@ describe('assumptions', () => {
             },
           },
           Endpoints: {
-            'GET /posts': {
-              Name: 'getPosts',
+            'POST /posts': {
+              Name: 'createPost',
               Request: {
                 type: 'object',
                 properties: { message: { type: 'string' } },
@@ -54,8 +54,9 @@ describe('assumptions', () => {
           },
         },
         Endpoints: {
-          'GET /posts': {
-            Name: 'getPosts',
+          'POST /posts': {
+            Name: 'createPost',
+            Query: {},
             Request: {
               type: 'object',
               additionalProperties: false,
@@ -69,7 +70,7 @@ describe('assumptions', () => {
       },
     },
     {
-      name: 'objectPropertiesRequiredByDefault',
+      name: 'objectPropertiesRequiredByDefault marks all object properties as',
       input: {
         assumptions: {
           objectPropertiesRequiredByDefault: true,
@@ -86,8 +87,8 @@ describe('assumptions', () => {
             },
           },
           Endpoints: {
-            'GET /posts': {
-              Name: 'getPosts',
+            'POST /posts': {
+              Name: 'createPost',
               Request: {
                 type: 'object',
                 properties: { message: { type: 'string' } },
@@ -112,8 +113,9 @@ describe('assumptions', () => {
           },
         },
         Endpoints: {
-          'GET /posts': {
-            Name: 'getPosts',
+          'POST /posts': {
+            Name: 'createPost',
+            Query: {},
             Request: {
               type: 'object',
               required: ['message'],
@@ -173,6 +175,86 @@ describe('loadSchemaFromFile', () => {
 });
 
 describe('validateSchema', () => {
+  test('fails if GET endpoints have a Request schema', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'GET /posts': {
+            Name: 'something',
+            Request: {},
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a "Request" schema for the "GET /posts" endpoint. GET endpoints should use a "Query" schema instead.',
+    );
+  });
+
+  test('fails if DELETE endpoints have a Request schema', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'DELETE /posts': {
+            Name: 'something',
+            Request: {},
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a "Request" schema for the "DELETE /posts" endpoint. DELETE endpoints should use a "Query" schema instead.',
+    );
+  });
+
+  test('fails if POST endpoints have a Query schema', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'POST /posts': {
+            Name: 'something',
+            Query: {},
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a "Query" schema for the "POST /posts" endpoint. POST endpoints should use a "Request" schema instead.',
+    );
+  });
+
+  test('fails if PUT endpoints have a Query schema', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'PUT /posts': {
+            Name: 'something',
+            Query: {},
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a "Query" schema for the "PUT /posts" endpoint. PUT endpoints should use a "Request" schema instead.',
+    );
+  });
+
+  test('fails if PATCH endpoints have a Query schema', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'PATCH /posts': {
+            Name: 'something',
+            Query: {},
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a "Query" schema for the "PATCH /posts" endpoint. PATCH endpoints should use a "Request" schema instead.',
+    );
+  });
+
   test('checks for object types in Request schemas', () => {
     expect(() =>
       validateSchema({
@@ -186,6 +268,25 @@ describe('validateSchema', () => {
       }),
     ).toThrowError(
       'Detected a non-object Request schema for POST posts. Request schemas must be objects.',
+    );
+  });
+
+  test('checks for string schemas only in Query schemas', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'GET /posts': {
+            Name: 'something',
+            Query: {
+              message: { type: 'string' },
+              badProperty: { type: 'object' },
+            },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a non-string "type" for the query parameter "badProperty" in endpoint GET /posts. Query parameter schemas must have a "string" type.',
     );
   });
 
@@ -208,6 +309,24 @@ describe('validateSchema', () => {
       }),
     ).toThrowError(
       'The id parameter was declared as a path parameter and a Request property for PUT posts/:id. Rename either the path parameter or the request property to avoid a collision.',
+    );
+  });
+
+  test('checks for colliding path/query parameters', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'GET /posts/:id': {
+            Name: 'something',
+            Query: {
+              id: { type: 'string' },
+            },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'The id parameter was declared as a path parameter and a Query parameter property for GET /posts/:id. Rename either the path parameter or the query parameter to avoid a collision.',
     );
   });
 });

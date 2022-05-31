@@ -5,6 +5,17 @@ import { getPathParams } from './meta-schema';
 
 export const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
+export const transformQuerySchemaIntoJSONSchema = (
+  Query: Record<string, JSONSchema4>,
+): JSONSchema4 => ({
+  type: 'object',
+  additionalProperties: false,
+  properties: Object.entries(Query ?? {}).reduce(
+    (accum, [key, schema]) => ({ ...accum, [key]: schema }),
+    {} as Record<string, JSONSchema4>,
+  ),
+});
+
 /**
  * Generates input + output types for the provided schema. Returns a
  * string of TypeScript source code.
@@ -14,16 +25,17 @@ export const generateEndpointTypes = async ({
   Endpoints,
 }: OneSchemaDefinition) => {
   const masterSchema: JSONSchema4 = Object.entries(Endpoints).reduce(
-    (accum, [key, { Request, Response }]) => ({
+    (accum, [key, { Request, Query, Response }]) => ({
       ...accum,
       properties: {
         ...accum.properties,
         [key]: {
           type: 'object',
           additionalProperties: false,
-          required: ['Request', 'PathParams', 'Response'],
+          required: ['Query', 'Request', 'PathParams', 'Response'],
           properties: {
-            Request,
+            Request: Request ?? {},
+            Query: Query ? transformQuerySchemaIntoJSONSchema(Query) : {},
             PathParams: {
               type: 'object',
               additionalProperties: false,

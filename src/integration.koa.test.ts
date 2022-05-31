@@ -11,11 +11,8 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
   Endpoints: {
     'GET /posts': {
       Name: 'getPosts',
-      Request: {
-        type: 'object',
-        properties: {
-          input: { type: 'string' },
-        },
+      Query: {
+        input: { type: 'string' },
       },
       Response: {
         type: 'object',
@@ -75,7 +72,6 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
     },
     'DELETE /posts/:id': {
       Name: 'deletePost',
-      Request: {},
       Response: {
         type: 'object',
         properties: {
@@ -150,7 +146,7 @@ test('GET method', async () => {
     {
       implementation: {
         'GET /posts': (ctx) => {
-          return ctx.request.body;
+          return ctx.request.query;
         },
       },
     },

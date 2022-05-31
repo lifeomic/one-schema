@@ -10,12 +10,8 @@ describe('generate', () => {
           Endpoints: {
             'GET /posts': {
               Name: 'getPosts',
-              Request: {
-                type: 'object',
-                additionalProperties: false,
-                properties: {
-                  input: { type: 'string' },
-                },
+              Query: {
+                input: { type: 'string' },
               },
               Response: {
                 type: 'object',
@@ -52,7 +48,8 @@ import type { OneSchema } from "@lifeomic/one-schema";
 
 export type Endpoints = {
   "GET /posts": {
-    Request: {
+    Request: unknown;
+    Query: {
       input?: string;
     };
     PathParams: {};
@@ -64,6 +61,7 @@ export type Endpoints = {
     Request: {
       message: string;
     };
+    Query: unknown;
     PathParams: {
       id: string;
     };
@@ -79,11 +77,7 @@ export const Schema: OneSchema<Endpoints> = {
   Endpoints: {
     "GET /posts": {
       Name: "getPosts",
-      Request: {
-        type: "object",
-        additionalProperties: false,
-        properties: { input: { type: "string" } },
-      },
+      Query: { input: { type: "string" } },
       Response: {
         type: "object",
         additionalProperties: false,

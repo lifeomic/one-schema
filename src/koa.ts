@@ -1,6 +1,7 @@
 import { JSONSchema4 } from 'json-schema';
 import type { ParameterizedContext } from 'koa';
 import type Router = require('koa-router');
+import { transformQuerySchemaIntoJSONSchema } from './generate-endpoints';
 import type { EndpointsOf, OneSchema } from './types';
 
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
@@ -11,6 +12,7 @@ export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
         params: EndpointsOf<Schema>[Name]['PathParams'];
         request: {
           body: EndpointsOf<Schema>[Name]['Request'];
+          query: EndpointsOf<Schema>[Name]['Query'];
         };
       }
     >,
@@ -79,16 +81,28 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
 
     /** A shared route handler. */
     const handler: Router.IMiddleware<State, Context> = async (ctx, next) => {
-      // 1. Validate the input data.
-      ctx.request.body = parse(
-        ctx,
-        endpoint,
-        { ...Endpoints[endpoint].Request, definitions: Resources },
-        // 1a. For GET and DELETE, use the query parameters. Otherwise, use the body.
-        ['GET', 'DELETE'].includes(method)
-          ? ctx.request.query
-          : ctx.request.body,
-      );
+      // 1. Input validation
+      // 1a. Validate the request body, if a schema is provided is one.
+      const requestSchema = Endpoints[endpoint].Request;
+      if (requestSchema) {
+        ctx.request.body = parse(
+          ctx,
+          endpoint,
+          { ...requestSchema, definitions: Resources },
+          ctx.request.body,
+        );
+      }
+
+      // 1b. Validate the query parameters, if a schema is provided.
+      const querySchema = Endpoints[endpoint].Query;
+      if (querySchema) {
+        ctx.request.query = parse(
+          ctx,
+          endpoint,
+          transformQuerySchemaIntoJSONSchema(querySchema),
+          ctx.request.query,
+        ) as Record<string, string>;
+      }
 
       // 2. Run the provided route handler.
       const response = await routeHandler(ctx);

@@ -2,7 +2,8 @@ import type { JSONSchema4 } from 'json-schema';
 
 export type EndpointDefinition = {
   Name: string;
-  Request: JSONSchema4;
+  Query?: { [key: string]: JSONSchema4 };
+  Request?: JSONSchema4;
   Response: JSONSchema4;
 };
 
@@ -19,6 +20,7 @@ export type OneSchemaDefinition = {
 export type GeneratedEndpointsType = {
   [key: string]: {
     Request: any;
+    Query: any;
     PathParams: any;
     Response: any;
   };
@@ -28,7 +30,8 @@ export type OneSchema<Endpoints extends GeneratedEndpointsType> =
   OneSchemaDefinition & {
     Endpoints: {
       [K in keyof Endpoints]: {
-        Request: JSONSchema4;
+        Query?: JSONSchema4;
+        Request?: JSONSchema4;
         Response: JSONSchema4;
       };
     };

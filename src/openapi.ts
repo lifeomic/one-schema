@@ -46,7 +46,7 @@ export const toOpenAPISpec = (
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   openAPIDocument.components!.schemas = Resources;
 
-  for (const [endpoint, { Name, Request, Response }] of Object.entries(
+  for (const [endpoint, { Name, Request, Query, Response }] of Object.entries(
     Endpoints,
   )) {
     const [method, path] = endpoint.split(' ');
@@ -79,14 +79,17 @@ export const toOpenAPISpec = (
 
     if (['GET', 'DELETE'].includes(method)) {
       // Add the query parameters for GET/DELETE methods
-      for (const [name, schema] of Object.entries(Request.properties ?? {}))
+      for (const [name, schema] of Object.entries(Query ?? {}))
         parameters.push({
           in: 'query',
           name,
           description: schema.description,
-          schema: { type: 'string' },
+          // @ts-ignore The JSONSchema types are slightly mismatched between OpenAPI
+          // and json-schema.
+          schema: schema,
           required:
-            Array.isArray(Request.required) && Request.required.includes(name),
+            Array.isArray(Request?.required) &&
+            Request?.required.includes(name),
         });
     } else {
       // Add the body spec parameters for non-GET/DELETE methods
