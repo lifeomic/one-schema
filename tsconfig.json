@@ -10,6 +10,7 @@
     "inlineSources": false,
     "inlineSourceMap": false,
     "esModuleInterop": false,
-    "declaration": true
+    "declaration": true,
+    "skipLibCheck": true
   }
 }

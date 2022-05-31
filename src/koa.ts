@@ -3,15 +3,24 @@ import type { ParameterizedContext } from 'koa';
 import type Router = require('koa-router');
 import type { EndpointsOf, OneSchema } from './types';
 
+// This declare is required to override the "declare" that comes from
+// koa-bodyparser. Without this, the typings from one-schema will be
+// overriden and collapsed into "any".
+declare module 'koa' {
+  interface Request {
+    body?: unknown;
+  }
+}
+
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
   [Name in keyof EndpointsOf<Schema>]: (
     context: ParameterizedContext<
       State,
       Context & {
         params: EndpointsOf<Schema>[Name]['PathParams'];
-        request: {
-          body: EndpointsOf<Schema>[Name]['Request'];
-        };
+        request: Name extends `${'GET' | 'DELETE'} ${string}`
+          ? { query: EndpointsOf<Schema>[Name]['Request'] }
+          : { body: EndpointsOf<Schema>[Name]['Request'] };
       }
     >,
   ) => Promise<EndpointsOf<Schema>[Name]['Response']>;
@@ -82,15 +91,24 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
       // 1. Validate the input data.
       const requestSchema = Endpoints[endpoint].Request;
       if (requestSchema) {
-        ctx.request.body = parse(
-          ctx,
-          endpoint,
-          { ...requestSchema, definitions: Resources },
-          // 1a. For GET and DELETE, use the query parameters. Otherwise, use the body.
-          ['GET', 'DELETE'].includes(method)
-            ? ctx.request.query
-            : ctx.request.body,
-        );
+        // 1a. For GET and DELETE, validate the query params.
+        if (['GET', 'DELETE'].includes(method)) {
+          // @ts-ignore
+          ctx.request.query = parse(
+            ctx,
+            endpoint,
+            { ...requestSchema, definitions: Resources },
+            ctx.request.query,
+          );
+        } else {
+          // 1b. Otherwise, use the body.
+          ctx.request.body = parse(
+            ctx,
+            endpoint,
+            { ...requestSchema, definitions: Resources },
+            ctx.request.body,
+          );
+        }
       }
 
       // 2. Run the provided route handler.

@@ -33,18 +33,33 @@ Endpoints:
         message: { type: string }
     Response:
       $ref: '#/definitions/Post'
+  GET /posts:
+    Name: listPosts
+    Request:
+      type: object
+      properties:
+        filter: { type: string }
+    Response:
+      type: array
+      items:
+        $ref: '#/definitions/Post'
 ```
 
-Next, run some generation.
+### Schema Assumptions
+
+`one-schema` provides a set of JSONSchema assumptions to help simplify Request/Response JSONSchema entries in commonly desired ways.
+
+These assumptions are described by the `SchemaAssumptions` type in [`src/meta-schema.ts`](src/meta-schema.ts) and can be individually or wholly disabled in the Node API and at the command line via the `--asssumptions` flag.
 
 ### Axios Client Generation
 
-Use the `generate-axios-client` command to generate a nicely typed Axios-based client.
+Use the `generate-axios-client` command to generate a nicely typed Axios-based client from the schema.
 
 ```
 one-schema generate-axios-client \
   --schema schema.yml \
   --output generated-client.ts \
+  --assumptions all \
   --format
 ```
 
@@ -59,7 +74,15 @@ export type Endpoints = {
     Request: {
       message: string;
     };
+    PathParams: {};
     Response: Post;
+  };
+  'GET /posts': {
+    Request: {
+      filter: string;
+    };
+    PathParams: {};
+    Response: Post[];
   };
 };
 
@@ -80,7 +103,8 @@ export class Client {
   constructor(private readonly client: AxiosInstance) {}
 
   createPost(
-    data: Endpoints['POST /posts']['Request'],
+    data: Endpoints['POST /posts']['Request'] &
+      Endpoints['POST /posts']['PathParams'],
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<Endpoints['POST /posts']['Response']>> {
     return this.client.request({
@@ -88,6 +112,19 @@ export class Client {
       method: 'POST',
       data: removePathParams('/posts', data),
       url: substituteParams('/posts', data),
+    });
+  }
+
+  listPosts(
+    params: Endpoints['GET /posts']['Request'] &
+      Endpoints['GET /posts']['PathParams'],
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<Endpoints['GET /posts']['Response']>> {
+    return this.client.request({
+      ...config,
+      method: 'GET',
+      params: removePathParams('/posts', params),
+      url: substituteParams('/posts', params),
     });
   }
 }
@@ -111,6 +148,19 @@ console.log(response.data);
 //   id: 'some-id',
 //   message: 'some-message'
 // }
+
+const response = await client.listPosts({
+  filter: 'some-filter',
+});
+
+console.log(response.data);
+// [
+//   {
+//     id: 'some-id',
+//     message: 'some-message'
+//   },
+//   ...
+// ]
 ```
 
 ### API Type Generation
@@ -121,6 +171,7 @@ Use the `generate-api-types` command to generate helpful types to use for server
 one-schema generate-api-types \
   --schema schema.yml \
   --output generated-api.ts \
+  --assumptions all \
   --format
 ```
 
@@ -135,7 +186,15 @@ export type Endpoints = {
     Request: {
       message: string;
     };
+    PathParams: {};
     Response: Post;
+  };
+  'GET /posts': {
+    Request: {
+      filter: string;
+    };
+    PathParams: {};
+    Response: Post[];
   };
 };
 
@@ -176,11 +235,18 @@ implementSchema(Schema, {
   },
   implementation: {
     'POST /posts': (ctx) => {
-      // `ctx.request.body` is well-typed and has been run-time-validated.
+      // `ctx.request.body` is well-typed and has been run-time validated.
       console.log(ctx.request.body.message);
 
       // TypeScript enforces that this matches the `Response` schema.
       return { id: '123', message: 'test message' };
+    },
+    'GET /posts': (ctx) => {
+      // `ctx.request.query` is well-typed and has been run-time validated
+      console.log(ctx.request.query.filter);
+
+      // TypeScript enforces that this matches the `Response` schema.
+      return [{ id: '123', message: 'test message' }];
     },
   },
 });
@@ -199,6 +265,7 @@ Use the `generate-open-api-spec` command to generate an OpenAPI spec from a simp
 one-schema generate-open-api-spec \
   --schema schema.yml \
   --output openapi-schema.json \
+  --assumptions all \
   --apiVersion "1.0.0" \
   --apiTitle "Simple API" \
   --format
@@ -263,14 +330,36 @@ The output (in `generated-openapi-schema.json`):
             }
           }
         }
+      },
+      "get": {
+        "operationId": "listPosts",
+        "responses": {
+          "200": {
+            "description": "TODO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Post"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ]
       }
     }
   }
 }
 ```
-
-### Schema Assumptions
-
-`one-schema` provides a set of JSONSchema assumptions to help simplify Request/Response JSONSchema entries in commonly desired ways.
-
-These assumptions are described by the `SchemaAssumptions` type in [`src/meta-schema.ts`](src/meta-schema.ts) and can be individually or wholly disabled in the Node API and at the command line via the `--asssumptions` flag.

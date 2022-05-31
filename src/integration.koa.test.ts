@@ -150,7 +150,7 @@ test('GET method', async () => {
     {
       implementation: {
         'GET /posts': (ctx) => {
-          return ctx.request.body;
+          return ctx.request.query;
         },
       },
     },
