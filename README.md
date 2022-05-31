@@ -56,78 +56,16 @@ one-schema generate-axios-client \
   --format
 ```
 
-The output (in `generated-client.ts`):
+This command will output two files:
 
-```typescript
-/* eslint-disable */
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+- `generated-client.js`
+- `generated-client.d.ts`
 
-export type Endpoints = {
-  'POST /posts': {
-    Request: {
-      message: string;
-    };
-    PathParams: {};
-    Response: Post;
-  };
-  'GET /posts': {
-    Request: {
-      filter: string;
-    };
-    PathParams: {};
-    Response: Post[];
-  };
-};
-
-export type Post = {
-  /**
-   * The post's unique identifier.
-   */
-  id: string;
-  /**
-   * The post message.
-   */
-  message: string;
-};
-
-// ... various helpers ...
-
-export class Client {
-  constructor(private readonly client: AxiosInstance) {}
-
-  createPost(
-    data: Endpoints['POST /posts']['Request'] &
-      Endpoints['POST /posts']['PathParams'],
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<Endpoints['POST /posts']['Response']>> {
-    return this.client.request({
-      ...config,
-      method: 'POST',
-      data: removePathParams('/posts', data),
-      url: substituteParams('/posts', data),
-    });
-  }
-
-  listPosts(
-    params: Endpoints['GET /posts']['Request'] &
-      Endpoints['GET /posts']['PathParams'],
-    config?: AxiosRequestConfig,
-  ): Promise<AxiosResponse<Endpoints['GET /posts']['Response']>> {
-    return this.client.request({
-      ...config,
-      method: 'GET',
-      params: removePathParams('/posts', params),
-      url: substituteParams('/posts', params),
-    });
-  }
-}
-```
-
-Usage:
+How to use the generated client:
 
 ```typescript
 import axios from 'axios';
-import { Client } from './generated-client.ts';
+import { Client } from './generated-client';
 
 // Provide any AxiosInstance, customized to your needs.
 const client = new Client(axios.create({ baseURL: 'https://my.api.com/' }));
@@ -215,7 +153,7 @@ import Router from 'koa-router';
 
 import { implementSchema } from '@lifeomic/one-schema';
 
-import { Schema } from './generated-api.ts';
+import { Schema } from './generated-api';
 
 const router = new Router();
 
@@ -264,7 +202,7 @@ Meta:
 ```
 
 ```bash
-one-schema generate-publishable \
+one-schema generate-publishable-schema \
   --schema schema.yml \
   --output output-directory
 ```
@@ -276,6 +214,48 @@ output-directory/
   package.json
   schema.json
   schema.yaml
+```
+
+### Distributing Clients
+
+Use the `generate-publishable-client` command in concert with the `Meta.PackageJSON` entry to generate a ready-to-publish NPM artifact containing a ready-to-use client.
+
+```yaml
+# schema.yml
+Meta:
+  PackageJSON:
+    name: desired-package-name
+    description: A description of the package
+    # ... any other desired package.json values
+# ...
+```
+
+```bash
+one-schema generate-publishable-client \
+  --schema schema.yml \
+  --output output-directory
+```
+
+The `output-directory` will have this file structure:
+
+```
+output-directory/
+  package.json
+  schema.json
+  schema.yaml
+  index.js
+  index.d.ts
+```
+
+The generated client code is identical to the output of `generate-axios-client`:
+
+```typescript
+import axios from 'axios';
+import { Client } from './output-directory';
+
+const client = new Client(axios.create(...))
+
+// use the client
 ```
 
 ### OpenAPI Spec generation

@@ -7,33 +7,64 @@ export type GenerateAxiosClientInput = {
   outputClass: string;
 };
 
+export type GenerateAxiosClientOutput = {
+  javascript: string;
+  declaration: string;
+};
+
 export const generateAxiosClient = async ({
   spec,
   outputClass,
-}: GenerateAxiosClientInput): Promise<string> => {
+}: GenerateAxiosClientInput): Promise<GenerateAxiosClientOutput> => {
   validateSchema(spec);
-  return [
+
+  const declaration = [
     '/* eslint-disable */',
     "import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';",
     '',
     await generateEndpointTypes(spec),
     `
-const substituteParams = (url: string, params: any) =>
+export declare class ${outputClass} {
+
+  constructor(client: AxiosInstance);
+
+  ${Object.entries(spec.Endpoints)
+    .map(([endpoint, { Name }]) => {
+      const [method] = endpoint.split(' ');
+      const paramsName = method === 'GET' ? 'params' : 'data';
+
+      return `
+        ${Name}(
+          ${paramsName}: Endpoints['${endpoint}']['Request'] &
+            Endpoints['${endpoint}']['PathParams'],
+          config?: AxiosRequestConfig
+        ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>>`;
+    })
+    .join('\n\n')}
+}`.trim(),
+  ].join('\n');
+
+  const javascript = `
+/* eslint-disable */
+
+const substituteParams = (url, params) =>
   Object.entries(params).reduce(
-    (url, [name, value]) => url.replace(":" + name, value as any),
+    (url, [name, value]) => url.replace(":" + name, value),
     url
   );
 
-const removePathParams = (url: string, params: any) => 
+const removePathParams = (url, params) => 
   Object.entries(params).reduce(
     (accum, [name, value]) =>
       url.includes(':' + name) ? accum : { ...accum, [name]: value },
     {}
   );
 
-export class ${outputClass} {
+class ${outputClass} {
 
-  constructor(private readonly client: AxiosInstance) {}
+  constructor(client) {
+    this.client = client;
+  }
 
   ${Object.entries(spec.Endpoints)
     .map(([endpoint, { Name }]) => {
@@ -41,11 +72,7 @@ export class ${outputClass} {
       const paramsName = method === 'GET' ? 'params' : 'data';
 
       return `
-        ${Name}(
-          ${paramsName}: Endpoints['${endpoint}']['Request'] &
-            Endpoints['${endpoint}']['PathParams'] ,
-          config?: AxiosRequestConfig
-        ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>> {
+        ${Name}(${paramsName}, config) {
           return this.client.request({
             ...config,
             method: '${method}',
@@ -56,6 +83,13 @@ export class ${outputClass} {
       `;
     })
     .join('\n\n')}
-}`.trim(),
-  ].join('\n');
+}
+
+module.exports.${outputClass} = ${outputClass};
+  `.trim();
+
+  return {
+    javascript,
+    declaration,
+  };
 };

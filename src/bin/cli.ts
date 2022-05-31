@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { mkdirSync, writeFileSync } from 'fs';
-import { extname } from 'path';
+import * as path from 'path';
 import yargs = require('yargs');
 import { format, BuiltInParserName } from 'prettier';
 import { dump } from 'js-yaml';
@@ -10,10 +10,10 @@ import { generateAPITypes } from '../generate-api-types';
 import { loadSchemaFromFile, SchemaAssumptions } from '../meta-schema';
 import { toOpenAPISpec } from '../openapi';
 import { generatePublishableSchema } from '../generate-publishable-schema';
-import path = require('path');
+import { generatePublishableClient } from '../generate-publishable-client';
 
 const getPrettierParser = (outputFilename: string): BuiltInParserName => {
-  const extension = extname(outputFilename).replace('.', '');
+  const extension = path.extname(outputFilename).replace('.', '');
   if (['yml', 'yaml'].includes(extension)) {
     return 'yaml';
   }
@@ -126,7 +126,16 @@ const program = yargs(process.argv.slice(2))
         outputClass: argv.className,
       });
 
-      writeGeneratedFile(argv.output, output, { format: argv.format });
+      writeGeneratedFile(argv.output.replace('.ts', '.js'), output.javascript, {
+        format: argv.format,
+      });
+      writeGeneratedFile(
+        argv.output.replace('.ts', '.d.ts'),
+        output.declaration,
+        {
+          format: argv.format,
+        },
+      );
     },
   )
   .command(
@@ -191,7 +200,34 @@ const program = yargs(process.argv.slice(2))
 
       for (const [filename, content] of Object.entries(files)) {
         writeGeneratedFile(path.resolve(argv.output, filename), content, {
-          format: true,
+          format: argv.format,
+        });
+      }
+    },
+  )
+  .command(
+    'generate-publishable-client',
+    'Generates a publishable client artifact.',
+    (y) =>
+      getCommonOptions(y).option('className', {
+        type: 'string',
+        description: 'The name of the generated client class.',
+        default: 'Client',
+      }),
+    async (argv) => {
+      const spec = loadSchemaFromFile(
+        argv.schema,
+        parseAssumptions(argv.assumptions),
+      );
+
+      const { files } = await generatePublishableClient({
+        spec,
+        outputClass: argv.className,
+      });
+
+      for (const [filename, content] of Object.entries(files)) {
+        writeGeneratedFile(path.resolve(argv.output, filename), content, {
+          format: argv.format,
         });
       }
     },
