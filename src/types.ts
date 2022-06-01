@@ -6,13 +6,7 @@ export type EndpointDefinition = {
   Response: JSONSchema4;
 };
 
-export type OneSchemaMetaDefinition = {
-  PackageJSON?: Record<string, unknown>;
-};
-
 export type OneSchemaDefinition = {
-  Meta?: OneSchemaMetaDefinition;
-
   Resources?: {
     [key: string]: JSONSchema4;
   };

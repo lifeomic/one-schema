@@ -9,8 +9,6 @@ import { generateAxiosClient } from '../generate-axios-client';
 import { generateAPITypes } from '../generate-api-types';
 import { loadSchemaFromFile, SchemaAssumptions } from '../meta-schema';
 import { toOpenAPISpec } from '../openapi';
-import { generatePublishableSchema } from '../generate-publishable-schema';
-import { generatePublishableClient } from '../generate-publishable-client';
 
 const getPrettierParser = (outputFilename: string): BuiltInParserName => {
   const extension = path.extname(outputFilename).replace('.', '');
@@ -184,52 +182,6 @@ const program = yargs(process.argv.slice(2))
           : JSON.stringify(openAPISpec, null, 2);
 
       writeGeneratedFile(argv.output, output, { format: argv.format });
-    },
-  )
-  .command(
-    'generate-publishable-schema',
-    'Generates a publishable schema artifact.',
-    getCommonOptions,
-    (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
-
-      const { files } = generatePublishableSchema({ spec });
-
-      for (const [filename, content] of Object.entries(files)) {
-        writeGeneratedFile(path.resolve(argv.output, filename), content, {
-          format: argv.format,
-        });
-      }
-    },
-  )
-  .command(
-    'generate-publishable-client',
-    'Generates a publishable client artifact.',
-    (y) =>
-      getCommonOptions(y).option('className', {
-        type: 'string',
-        description: 'The name of the generated client class.',
-        default: 'Client',
-      }),
-    async (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
-
-      const { files } = await generatePublishableClient({
-        spec,
-        outputClass: argv.className,
-      });
-
-      for (const [filename, content] of Object.entries(files)) {
-        writeGeneratedFile(path.resolve(argv.output, filename), content, {
-          format: argv.format,
-        });
-      }
     },
   )
   .demandCommand()
