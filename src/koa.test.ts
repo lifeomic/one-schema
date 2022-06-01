@@ -24,6 +24,7 @@ test('using unsupported methods throws immediately', () => {
         implementation: {
           'OPTIONS /post': () => ({}),
         },
+        introspection: undefined,
       },
     );
   }).toThrowError('Unsupported method detected: OPTIONS /post');
@@ -57,6 +58,7 @@ test('setting a 200-level response code overrides the response', async () => {
           return {};
         },
       },
+      introspection: undefined,
     },
   );
 
