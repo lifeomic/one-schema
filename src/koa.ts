@@ -61,24 +61,22 @@ export type ImplementationConfig<
   on: Router<State, Context>;
 
   /**
-   * A function for parsing the correct data from the provided `payload`,
+   * A function for parsing the correct data from the provided `data`,
    * such that the parsed data matches the request `schema` for the `endpoint`.
    *
-   * If the `payload` does not conform to the schema, this function
+   * If the `data` does not conform to the schema, this function
    * should `throw`.
    *
    * @param ctx The current context.
-   * @param endpoint The endpoint being requested.
-   * @param schema The request JSON Schema.
-   * @param payload The payload to validate.
+   * @param params.endpoint The endpoint being requested.
+   * @param params.schema The request JSON Schema.
+   * @param params.data The payload to validate.
    *
    * @returns A validated payload.
    */
   parse: <Endpoint extends keyof EndpointsOf<Schema>>(
     ctx: ParameterizedContext<State, Context>,
-    endpoint: Endpoint,
-    schema: JSONSchema4,
-    payload: unknown,
+    params: { endpoint: Endpoint; schema: JSONSchema4; data: unknown },
   ) => Schema['Endpoints'][Endpoint]['Request'];
 
   /** A configuration for supporting introspection. */
@@ -127,20 +125,18 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
         // 1a. For GET and DELETE, validate the query params.
         if (['GET', 'DELETE'].includes(method)) {
           // @ts-ignore
-          ctx.request.query = parse(
-            ctx,
+          ctx.request.query = parse(ctx, {
             endpoint,
-            { ...requestSchema, definitions: schema.Resources },
-            ctx.request.query,
-          );
+            schema: { ...requestSchema, definitions: schema.Resources },
+            data: ctx.request.query,
+          });
         } else {
           // 1b. Otherwise, use the body.
-          ctx.request.body = parse(
-            ctx,
+          ctx.request.body = parse(ctx, {
             endpoint,
-            { ...requestSchema, definitions: schema.Resources },
-            ctx.request.body,
-          );
+            schema: { ...requestSchema, definitions: schema.Resources },
+            data: ctx.request.body,
+          });
         }
       }
 

@@ -93,7 +93,7 @@ const executeTest = async (
   const ajv = new Ajv();
   const config: ImplementationConfig<any, any, any> = {
     on: new Router(),
-    parse: (ctx, endpoint, schema, data) => {
+    parse: (ctx, { schema, data }) => {
       if (ajv.validate(schema, data)) {
         return data;
       }
