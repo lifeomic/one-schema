@@ -165,7 +165,12 @@ export const loadSchemaFromFile = (
   filename: string,
   assumptions: SchemaAssumptions = DEFAULT_ASSUMPTIONS,
 ): OneSchemaDefinition => {
-  const spec = load(readFileSync(filename, { encoding: 'utf-8' }));
+  let spec: any = load(readFileSync(filename, { encoding: 'utf-8' }));
+
+  // Check if this in an introspection result. If so, grab the schema.
+  if (typeof spec === 'object' && 'schema' in spec) {
+    spec = spec.schema;
+  }
 
   validateSchema(spec as OneSchemaDefinition);
 

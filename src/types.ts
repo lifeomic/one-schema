@@ -38,3 +38,8 @@ export type OneSchema<Endpoints extends GeneratedEndpointsType> =
 export type EndpointsOf<Schema extends OneSchema<any>> = NonNullable<
   Schema['__endpoints_type__']
 >;
+
+export type IntrospectionResponse = {
+  schema: OneSchemaDefinition;
+  serviceVersion: string;
+};

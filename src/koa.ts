@@ -1,7 +1,7 @@
 import { JSONSchema4 } from 'json-schema';
 import type { ParameterizedContext } from 'koa';
 import type Router = require('koa-router');
-import type { EndpointsOf, OneSchema } from './types';
+import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
 
 // This declare is required to override the "declare" that comes from
 // koa-bodyparser. Without this, the typings from one-schema will be
@@ -28,6 +28,20 @@ export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
     | Promise<EndpointsOf<Schema>[Name]['Response']>;
 };
 
+export type IntrospectionConfig = {
+  /**
+   * A route at which to serve the introspection request on the implementing
+   * Router object.
+   *
+   * A GET method will be supported on this route, and will return introspection data.
+   */
+  route: string;
+  /**
+   * The current version of the service, served as part of introspection.
+   */
+  serviceVersion: string;
+};
+
 /**
  * An implementation configuration for an API.
  */
@@ -47,25 +61,26 @@ export type ImplementationConfig<
   on: Router<State, Context>;
 
   /**
-   * A function for parsing the correct data from the provided `payload`,
+   * A function for parsing the correct data from the provided `data`,
    * such that the parsed data matches the request `schema` for the `endpoint`.
    *
-   * If the `payload` does not conform to the schema, this function
+   * If the `data` does not conform to the schema, this function
    * should `throw`.
    *
    * @param ctx The current context.
-   * @param endpoint The endpoint being requested.
-   * @param schema The request JSON Schema.
-   * @param payload The payload to validate.
+   * @param params.endpoint The endpoint being requested.
+   * @param params.schema The request JSON Schema.
+   * @param params.data The payload to validate.
    *
    * @returns A validated payload.
    */
   parse: <Endpoint extends keyof EndpointsOf<Schema>>(
     ctx: ParameterizedContext<State, Context>,
-    endpoint: Endpoint,
-    schema: JSONSchema4,
-    payload: unknown,
+    params: { endpoint: Endpoint; schema: JSONSchema4; data: unknown },
   ) => Schema['Endpoints'][Endpoint]['Request'];
+
+  /** A configuration for supporting introspection. */
+  introspection: IntrospectionConfig | undefined;
 };
 
 /**
@@ -75,13 +90,27 @@ export type ImplementationConfig<
  * @param config The implementation configuration.
  */
 export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
-  { Endpoints, Resources }: Schema,
+  schema: Schema,
   {
     implementation,
     parse,
     on: router,
+    introspection,
   }: ImplementationConfig<Schema, State, Context>,
 ): void => {
+  if (introspection) {
+    router.get(introspection.route, (ctx, next) => {
+      const response: IntrospectionResponse = {
+        schema,
+        serviceVersion: introspection.serviceVersion,
+      };
+
+      ctx.body = response;
+      ctx.status = 200;
+      return next();
+    });
+  }
+
   // Iterate through every handler, and add a route for it based on
   // the key/route description.
   for (const [endpoint, routeHandler] of Object.entries(implementation)) {
@@ -91,25 +120,23 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
     /** A shared route handler. */
     const handler: Router.IMiddleware<State, Context> = async (ctx, next) => {
       // 1. Validate the input data.
-      const requestSchema = Endpoints[endpoint].Request;
+      const requestSchema = schema.Endpoints[endpoint].Request;
       if (requestSchema) {
         // 1a. For GET and DELETE, validate the query params.
         if (['GET', 'DELETE'].includes(method)) {
           // @ts-ignore
-          ctx.request.query = parse(
-            ctx,
+          ctx.request.query = parse(ctx, {
             endpoint,
-            { ...requestSchema, definitions: Resources },
-            ctx.request.query,
-          );
+            schema: { ...requestSchema, definitions: schema.Resources },
+            data: ctx.request.query,
+          });
         } else {
           // 1b. Otherwise, use the body.
-          ctx.request.body = parse(
-            ctx,
+          ctx.request.body = parse(ctx, {
             endpoint,
-            { ...requestSchema, definitions: Resources },
-            ctx.request.body,
-          );
+            schema: { ...requestSchema, definitions: schema.Resources },
+            data: ctx.request.body,
+          });
         }
       }
 

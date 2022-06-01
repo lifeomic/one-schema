@@ -10,6 +10,8 @@ Commands:
                                  and options.
   cli.ts generate-open-api-spec  Generates an OpenAPI v3.1.0 spec using the
                                  specified schema and options.
+  cli.ts fetch-remote-schema     Fetches a schema from a remote service via
+                                 introspection.
 
 Options:
   --help     Show help                                                 [boolean]
@@ -28,6 +30,8 @@ Commands:
                                  and options.
   cli.ts generate-open-api-spec  Generates an OpenAPI v3.1.0 spec using the
                                  specified schema and options.
+  cli.ts fetch-remote-schema     Fetches a schema from a remote service via
+                                 introspection.
 
 Options:
   --help     Show help                                                 [boolean]

@@ -93,13 +93,14 @@ const executeTest = async (
   const ajv = new Ajv();
   const config: ImplementationConfig<any, any, any> = {
     on: new Router(),
-    parse: (ctx, endpoint, schema, data) => {
+    parse: (ctx, { schema, data }) => {
       if (ajv.validate(schema, data)) {
         return data;
       }
       return ctx.throw(400, 'data did not match schema');
     },
     implementation: {},
+    introspection: undefined,
     ...overrides,
   };
   implementSchema(TEST_SPEC, config);
@@ -226,6 +227,28 @@ test('DELETE method', async () => {
       expect(result).toMatchObject({
         status: 200,
         data: {},
+      });
+    },
+  );
+});
+
+test('introspection', async () => {
+  await executeTest(
+    {
+      introspection: {
+        route: '/private/introspection',
+        serviceVersion: 'mock-service-version',
+      },
+    },
+    async (client) => {
+      const result = await client.get('/private/introspection');
+
+      expect(result).toMatchObject({
+        status: 200,
+        data: {
+          schema: TEST_SPEC,
+          serviceVersion: 'mock-service-version',
+        },
       });
     },
   );
