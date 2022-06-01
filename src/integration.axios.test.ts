@@ -6,12 +6,13 @@ import {
   GenerateAxiosClientInput,
 } from './generate-axios-client';
 
-const TEST_GEN_FILE = `${__dirname}/test-generated.ts`;
+const testGeneratedFile = (ext: string) => `${__dirname}/test-generated${ext}`;
 
 const generateAndFormat = (input: GenerateAxiosClientInput) =>
-  generateAxiosClient(input).then((source) =>
-    format(source, { parser: 'typescript' }),
-  );
+  generateAxiosClient(input).then((source) => ({
+    javascript: format(source.javascript, { parser: 'babel' }),
+    declaration: format(source.declaration, { parser: 'typescript' }),
+  }));
 
 describe('integration tests', () => {
   test('compile + execute', async () => {
@@ -58,12 +59,10 @@ describe('integration tests', () => {
 
     const output = await generateAndFormat({ spec, outputClass: 'Service' });
 
-    writeFileSync(TEST_GEN_FILE, output);
+    writeFileSync(testGeneratedFile('.js'), output.javascript);
+    writeFileSync(testGeneratedFile('.d.ts'), output.declaration);
 
-    const { Service } = await import(
-      // @ts-ignore
-      TEST_GEN_FILE
-    );
+    const { Service } = await import(testGeneratedFile('.js'));
 
     const mockRequest = jest.fn();
     const instance = new Service({

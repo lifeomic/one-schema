@@ -11,6 +11,7 @@ Commands:
   cli.ts generate-open-api-spec       Generates an OpenAPI v3.1.0 spec using the
                                       specified schema and options.
   cli.ts generate-publishable-schema  Generates a publishable schema artifact.
+  cli.ts generate-publishable-client  Generates a publishable client artifact.
 
 Options:
   --help     Show help                                                 [boolean]
@@ -30,6 +31,7 @@ Commands:
   cli.ts generate-open-api-spec       Generates an OpenAPI v3.1.0 spec using the
                                       specified schema and options.
   cli.ts generate-publishable-schema  Generates a publishable schema artifact.
+  cli.ts generate-publishable-client  Generates a publishable client artifact.
 
 Options:
   --help     Show help                                                 [boolean]
