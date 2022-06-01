@@ -1,7 +1,7 @@
 import { JSONSchema4 } from 'json-schema';
 import type { ParameterizedContext } from 'koa';
 import type Router = require('koa-router');
-import type { EndpointsOf, OneSchema } from './types';
+import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
 
 // This declare is required to override the "declare" that comes from
 // koa-bodyparser. Without this, the typings from one-schema will be
@@ -102,7 +102,12 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
 ): void => {
   if (introspection) {
     router.get(introspection.route, (ctx, next) => {
-      ctx.body = { schema, serviceVersion: introspection.serviceVersion };
+      const response: IntrospectionResponse = {
+        schema,
+        serviceVersion: introspection.serviceVersion,
+      };
+
+      ctx.body = response;
       ctx.status = 200;
       return next();
     });

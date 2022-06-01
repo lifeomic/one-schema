@@ -9,6 +9,7 @@ import { generateAxiosClient } from '../generate-axios-client';
 import { generateAPITypes } from '../generate-api-types';
 import { loadSchemaFromFile, SchemaAssumptions } from '../meta-schema';
 import { toOpenAPISpec } from '../openapi';
+import { fetchRemoteSchema } from '../fetch-remote-schema';
 
 const getPrettierParser = (outputFilename: string): BuiltInParserName => {
   const extension = path.extname(outputFilename).replace('.', '');
@@ -182,6 +183,40 @@ const program = yargs(process.argv.slice(2))
           : JSON.stringify(openAPISpec, null, 2);
 
       writeGeneratedFile(argv.output, output, { format: argv.format });
+    },
+  )
+  .command(
+    'fetch-remote-schema',
+    'Fetches a schema from a remote service via introspection.',
+    (y) =>
+      y
+        .option('from', {
+          type: 'string',
+          description: 'The url of the remote schema.',
+          demandOption: true,
+        })
+        .option('output', {
+          type: 'string',
+          description: 'A filepath for the fetched schema.',
+          demandOption: true,
+        }),
+    async (argv) => {
+      const result = await fetchRemoteSchema({ url: argv.from });
+
+      writeGeneratedFile(
+        argv.output,
+        JSON.stringify(
+          {
+            // Re-declaring here so that `serviceVersion` will end up at the top of the
+            // file, and is clearly visible in source control.
+            serviceVersion: result.serviceVersion,
+            schema: result.schema,
+          },
+          null,
+          2,
+        ),
+        { format: false },
+      );
     },
   )
   .demandCommand()

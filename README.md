@@ -45,55 +45,6 @@ Endpoints:
         $ref: '#/definitions/Post'
 ```
 
-### Axios Client Generation
-
-Use the `generate-axios-client` command to generate a nicely typed Axios-based client from the schema.
-
-```
-one-schema generate-axios-client \
-  --schema schema.yml \
-  --output generated-client.ts \
-  --format
-```
-
-This command will output two files:
-
-- `generated-client.js`
-- `generated-client.d.ts`
-
-How to use the generated client:
-
-```typescript
-import axios from 'axios';
-import { Client } from './generated-client';
-
-// Provide any AxiosInstance, customized to your needs.
-const client = new Client(axios.create({ baseURL: 'https://my.api.com/' }));
-
-const response = await client.createPost({
-  message: 'some-message',
-});
-
-console.log(response.data);
-// {
-//   id: 'some-id',
-//   message: 'some-message'
-// }
-
-const response = await client.listPosts({
-  filter: 'some-filter',
-});
-
-console.log(response.data);
-// [
-//   {
-//     id: 'some-id',
-//     message: 'some-message'
-//   },
-//   ...
-// ]
-```
-
 ### API Type Generation
 
 Use the `generate-api-types` command to generate helpful types to use for server-side input validation.
@@ -179,12 +130,73 @@ implementSchema(Schema, {
       return [{ id: '123', message: 'test message' }];
     },
   },
+  introspection: {
+    route: '/private/introspection',
+    serviceVersion: process.env.LIFEOMIC_SERVICE_VERSION,
+  },
 });
 
 const server = new Koa()
   .use(router.routes())
   .use(router.allowedMethods())
   .listen();
+```
+
+### Axios Client Generation
+
+Projects that want to safely consume a service that uses `one-schema` can perform introspection using `fetch-remote-schema`.
+
+```
+one-schema fetch-remote-schema \
+  --url lambda://my-service:deployed/private/introspection \
+  --output src/schemas/my-service.json
+```
+
+Then, use the `generate-axios-client` command to generate a nicely typed Axios-based client from the schema.
+
+```
+one-schema generate-axios-client \
+  --schema src/schemas/my-service.json \
+  --output generated-client.ts \
+  --format
+```
+
+This command will output two files:
+
+- `generated-client.js`
+- `generated-client.d.ts`
+
+How to use the generated client:
+
+```typescript
+import axios from 'axios';
+import { Client } from './generated-client';
+
+// Provide any AxiosInstance, customized to your needs.
+const client = new Client(axios.create({ baseURL: 'https://my.api.com/' }));
+
+const response = await client.createPost({
+  message: 'some-message',
+});
+
+console.log(response.data);
+// {
+//   id: 'some-id',
+//   message: 'some-message'
+// }
+
+const response = await client.listPosts({
+  filter: 'some-filter',
+});
+
+console.log(response.data);
+// [
+//   {
+//     id: 'some-id',
+//     message: 'some-message'
+//   },
+//   ...
+// ]
 ```
 
 ### OpenAPI Spec generation

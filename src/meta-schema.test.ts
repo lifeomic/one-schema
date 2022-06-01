@@ -8,6 +8,7 @@ import {
   validateSchema,
   withAssumptions,
 } from './meta-schema';
+import { IntrospectionResponse } from './types';
 
 describe('assumptions', () => {
   const FIXTURES: {
@@ -169,6 +170,26 @@ describe('loadSchemaFromFile', () => {
     expect(() => loadSchemaFromFile(filename)).toThrow(
       'Detected invalid schema:',
     );
+  });
+
+  test('handles introspection responses', () => {
+    const introspectionResponse: IntrospectionResponse = {
+      serviceVersion: 'mock-service-version',
+      schema: {
+        Endpoints: {},
+      },
+    };
+
+    const filename = tmpNameSync();
+    writeFileSync(filename, dump(introspectionResponse), {
+      encoding: 'utf-8',
+    });
+
+    const result = loadSchemaFromFile(filename);
+
+    expect(result).toStrictEqual({
+      Endpoints: {},
+    });
   });
 });
 
