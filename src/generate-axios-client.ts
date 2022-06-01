@@ -49,7 +49,7 @@ export declare class ${outputClass} {
 
 const substituteParams = (url, params) =>
   Object.entries(params).reduce(
-    (url, [name, value]) => url.replace(":" + name, value),
+    (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
     url
   );
 
