@@ -20,7 +20,7 @@ describe('assumptions', () => {
     expect: OneSchemaDefinition;
   }[] = [
     {
-      name: 'noAdditionalPropertiesOnObjects',
+      name: 'noAdditionalPropertiesOnObjects adds additionalProperties: false to objects',
       input: {
         assumptions: {
           noAdditionalPropertiesOnObjects: true,
@@ -70,7 +70,7 @@ describe('assumptions', () => {
       },
     },
     {
-      name: 'objectPropertiesRequiredByDefault',
+      name: 'objectPropertiesRequiredByDefault marks all object properties as required by default',
       input: {
         assumptions: {
           objectPropertiesRequiredByDefault: true,
@@ -108,7 +108,7 @@ describe('assumptions', () => {
             properties: {
               id: { type: 'string' },
               message: { type: 'string' },
-              title: { type: 'string', optional: true },
+              title: { type: 'string' },
             },
           },
         },

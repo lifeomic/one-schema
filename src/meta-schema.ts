@@ -79,25 +79,41 @@ export const validateSchema = (spec: OneSchemaDefinition) => {
   }
 };
 
+/**
+ * Applies a set of transforms to a OneSchema.
+ *
+ * The provided `transforms` are each fully completed before the next begins.
+ *
+ * @example
+ * transformOneSchema(
+ *   spec,
+ *   transformA,
+ *   transformB
+ * )
+ * // transformA is applied to the entire schema, then transformB
+ * // is applied to the entire schema.
+ */
 const transformOneSchema = (
   spec: OneSchemaDefinition,
-  transform: (schema: JSONSchema4) => JSONSchema4,
+  ...transforms: ((schema: JSONSchema4) => JSONSchema4)[]
 ): OneSchemaDefinition => {
   const copy = deepCopy(spec);
 
-  for (const key in copy.Resources) {
-    copy.Resources[key] = transformJSONSchema(copy.Resources[key], transform);
-  }
+  for (const transform of transforms) {
+    for (const key in copy.Resources) {
+      copy.Resources[key] = transformJSONSchema(copy.Resources[key], transform);
+    }
 
-  for (const key in copy.Endpoints) {
-    copy.Endpoints[key].Request = transformJSONSchema(
-      copy.Endpoints[key].Request ?? {},
-      transform,
-    );
-    copy.Endpoints[key].Response = transformJSONSchema(
-      copy.Endpoints[key].Response,
-      transform,
-    );
+    for (const key in copy.Endpoints) {
+      copy.Endpoints[key].Request = transformJSONSchema(
+        copy.Endpoints[key].Request ?? {},
+        transform,
+      );
+      copy.Endpoints[key].Response = transformJSONSchema(
+        copy.Endpoints[key].Response,
+        transform,
+      );
+    }
   }
 
   return copy;
@@ -145,16 +161,21 @@ export const withAssumptions = (
   }
 
   if (assumptions.objectPropertiesRequiredByDefault) {
-    copy = transformOneSchema(copy, (schema) =>
-      schema.type === 'object' && schema.properties
-        ? {
-            required: Object.keys(schema.properties).filter(
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              (name) => schema.properties![name].optional !== true,
-            ),
-            ...schema,
-          }
-        : schema,
+    copy = transformOneSchema(
+      copy,
+      (schema) =>
+        schema.type === 'object' && schema.properties
+          ? {
+              required: Object.keys(schema.properties).filter(
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                (name) => schema.properties![name].optional !== true,
+              ),
+              ...schema,
+            }
+          : schema,
+      // Prune the `optional` keywords from the schema, since they are no longer
+      // needed
+      (schema) => deepCopy({ ...schema, optional: undefined }),
     );
   }
 
