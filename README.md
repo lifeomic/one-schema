@@ -134,7 +134,7 @@ implementSchema(Schema, {
   },
   introspection: {
     route: '/private/introspection',
-    serviceVersion: process.env.LIFEOMIC_SERVICE_VERSION,
+    serviceVersion: process.env.LIFEOMIC_BUILD_ID!,
   },
 });
 
