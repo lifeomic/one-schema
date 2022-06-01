@@ -95,7 +95,7 @@ const getCommonOptions = (argv: yargs.Argv) =>
     .option('format', {
       type: 'boolean',
       description: 'Whether to format the output using prettier.',
-      default: false,
+      default: true,
     })
     .option('assumptions', {
       type: 'string',
