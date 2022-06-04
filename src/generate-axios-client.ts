@@ -41,6 +41,17 @@ export declare class ${outputClass} {
         ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>>`;
     })
     .join('\n\n')}
+
+  paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
+    request: (
+      data: T,
+      config?: AxiosRequestConfig
+    ) => Promise<
+      AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
+    >,
+    data: T,
+    config?: AxiosRequestConfig
+  ): Promise<Item[]>;
 }`.trim(),
   ].join('\n');
 
@@ -59,6 +70,15 @@ const removePathParams = (url, params) =>
       url.includes(':' + name) ? accum : { ...accum, [name]: value },
     {}
   );
+
+const parseQueryParamsFromPagingLink = (link) => {
+  const params = new URLSearchParams(link.split('?')[1]);
+
+  return {
+    nextPageToken: params.get('nextPageToken'),
+    pageSize: params.get('pageSize')
+  };
+};
 
 class ${outputClass} {
 
@@ -83,6 +103,26 @@ class ${outputClass} {
       `;
     })
     .join('\n\n')}
+
+  async paginate(request, data, config) {
+    const result = [];
+
+    let nextPageParams = {};
+    do {
+      const response = await this[request.name](
+        { ...nextPageParams, ...data },
+        config
+      );
+
+      result.push(...response.data.items);
+
+      nextPageParams = response.data.links.next
+        ? parseQueryParamsFromPagingLink(response.data.links.next)
+        : {};
+    } while (!!nextPageParams.nextPageToken);
+
+    return result;
+  }
 }
 
 module.exports.${outputClass} = ${outputClass};

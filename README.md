@@ -201,6 +201,41 @@ console.log(response.data);
 // ]
 ```
 
+#### Pagination
+
+The generated client provides a built-in helper for reading from paginated LifeOmic APIs:
+
+```yaml
+# Example endpoint
+Name: listPaginatedPosts
+Request:
+  type: object
+  properties:
+    filter: { type: string }
+    nextPageToken: { type: string }
+    pageSize: { type: string }
+Response:
+  type: object
+  properties:
+    items:
+      $ref: '#/definitions/Post'
+    links:
+      type: object
+      properties:
+        self: { type: string }
+        next: { type: string }
+```
+
+```typescript
+// Usage
+const result = await client.paginate(client.listPaginatedPosts, {
+  filter: '...',
+  pageSize: '10',
+});
+
+result.length; // result is the fully-paginated list of posts
+```
+
 ### OpenAPI Spec generation
 
 Use the `generate-open-api-spec` command to generate an OpenAPI spec from a simple schema, which may be useful for interfacing with common OpenAPI tooling.
