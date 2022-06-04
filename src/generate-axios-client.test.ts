@@ -68,12 +68,16 @@ const substituteParams = (url, params) =>
     url
   );
 
-const removePathParams = (url, params) =>
-  Object.entries(params).reduce(
-    (accum, [name, value]) =>
-      url.includes(":" + name) ? accum : { ...accum, [name]: value },
-    {}
-  );
+const removePathParams = (url, params, encode) =>
+  Object.entries(params)
+    .filter(([key, value]) => value !== undefined)
+    .reduce(
+      (accum, [name, value]) =>
+        url.includes(":" + name)
+          ? accum
+          : { ...accum, [name]: encode ? encodeURIComponent(value) : value },
+      {}
+    );
 
 const parseQueryParamsFromPagingLink = (link) => {
   const params = new URLSearchParams(link.split("?")[1]);
@@ -89,12 +93,12 @@ class Client {
     this.client = client;
   }
 
-  getPosts(params, config) {
+  getPosts(data, config) {
     return this.client.request({
       ...config,
       method: "GET",
-      params: removePathParams("/posts", params),
-      url: substituteParams("/posts", params),
+      params: removePathParams("/posts", data, true),
+      url: substituteParams("/posts", data),
     });
   }
 
@@ -102,7 +106,7 @@ class Client {
     return this.client.request({
       ...config,
       method: "PUT",
-      data: removePathParams("/posts/:id", data),
+      data: removePathParams("/posts/:id", data, false),
       url: substituteParams("/posts/:id", data),
     });
   }

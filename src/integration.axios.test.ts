@@ -143,6 +143,34 @@ describe('integration tests', () => {
     });
   });
 
+  test('generated code URI-encodes query parameters', async () => {
+    const { client, request } = await prepare();
+
+    await client.listPosts({ filter: 'some/evil/string' });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith({
+      method: 'GET',
+      url: '/posts/list',
+      params: {
+        filter: 'some%2Fevil%2Fstring',
+      },
+    });
+  });
+
+  test('generated code does not send undefined query parameters', async () => {
+    const { client, request } = await prepare();
+
+    await client.listPosts({ filter: undefined });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith({
+      method: 'GET',
+      url: '/posts/list',
+      params: {},
+    });
+  });
+
   test('pagination', async () => {
     const { client, request } = await prepare();
 

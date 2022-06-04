@@ -64,12 +64,16 @@ const substituteParams = (url, params) =>
     url
   );
 
-const removePathParams = (url, params) => 
-  Object.entries(params).reduce(
-    (accum, [name, value]) =>
-      url.includes(':' + name) ? accum : { ...accum, [name]: value },
-    {}
-  );
+const removePathParams = (url, params, encode) => 
+  Object.entries(params)
+    .filter(([key, value]) => value !== undefined)
+    .reduce(
+      (accum, [name, value]) =>
+        url.includes(':' + name)
+          ? accum
+          : { ...accum, [name]: encode ? encodeURIComponent(value) : value },
+      {}
+    );
 
 const parseQueryParamsFromPagingLink = (link) => {
   const params = new URLSearchParams(link.split('?')[1]);
@@ -89,15 +93,18 @@ class ${outputClass} {
   ${Object.entries(spec.Endpoints)
     .map(([endpoint, { Name }]) => {
       const [method, url] = endpoint.split(' ');
-      const paramsName = method === 'GET' ? 'params' : 'data';
-
+      const useQueryParams = ['GET', 'DELETE'].includes(method);
       return `
-        ${Name}(${paramsName}, config) {
+        ${Name}(data, config) {
           return this.client.request({
             ...config,
             method: '${method}',
-            ${paramsName}: removePathParams('${url}', ${paramsName}),
-            url: substituteParams('${url}', ${paramsName}),
+            ${
+              useQueryParams
+                ? `params: removePathParams('${url}', data, true),`
+                : `data: removePathParams('${url}', data, false),`
+            }
+            url: substituteParams('${url}', data),
           })
         }
       `;
