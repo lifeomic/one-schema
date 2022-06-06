@@ -75,6 +75,15 @@ const removePathParams = (url, params) =>
     {}
   );
 
+const parseQueryParamsFromPagingLink = (link) => {
+  const params = new URLSearchParams(link.split("?")[1]);
+
+  return {
+    nextPageToken: params.get("nextPageToken"),
+    pageSize: params.get("pageSize"),
+  };
+};
+
 class Client {
   constructor(client) {
     this.client = client;
@@ -96,6 +105,26 @@ class Client {
       data: removePathParams("/posts/:id", data),
       url: substituteParams("/posts/:id", data),
     });
+  }
+
+  async paginate(request, data, config) {
+    const result = [];
+
+    let nextPageParams = {};
+    do {
+      const response = await this[request.name](
+        { ...nextPageParams, ...data },
+        config
+      );
+
+      result.push(...response.data.items);
+
+      nextPageParams = response.data.links.next
+        ? parseQueryParamsFromPagingLink(response.data.links.next)
+        : {};
+    } while (!!nextPageParams.nextPageToken);
+
+    return result;
   }
 }
 
@@ -142,6 +171,17 @@ export declare class Client {
       Endpoints["PUT /posts/:id"]["PathParams"],
     config?: AxiosRequestConfig
   ): Promise<AxiosResponse<Endpoints["PUT /posts/:id"]["Response"]>>;
+
+  paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
+    request: (
+      data: T,
+      config?: AxiosRequestConfig
+    ) => Promise<
+      AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
+    >,
+    data: T,
+    config?: AxiosRequestConfig
+  ): Promise<Item[]>;
 }
 `,
       },

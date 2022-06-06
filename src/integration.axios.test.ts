@@ -53,6 +53,36 @@ const prepare = async () => {
           },
         },
       },
+      'GET /posts/list': {
+        Name: 'listPosts',
+        Request: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            filter: { type: 'string' },
+            nextPageToken: { type: 'string' },
+            pageSize: { type: 'string' },
+          },
+        },
+        Response: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['items', 'links'],
+          properties: {
+            items: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            links: {
+              type: 'object',
+              properties: {
+                self: { type: 'string' },
+                next: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
     },
   };
 
@@ -111,5 +141,77 @@ describe('integration tests', () => {
         message: 'some-message',
       },
     });
+  });
+
+  test('pagination', async () => {
+    const { client, request } = await prepare();
+
+    request
+      .mockResolvedValueOnce({
+        data: {
+          items: ['first', 'second'],
+          links: {
+            self: 'blah-blah',
+            next: '/posts/list?nextPageToken=firstpagetoken&pageSize=10&randomProperty=blah',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          items: ['third', 'fourth'],
+          links: {
+            self: 'blah-blah',
+            next: '/posts/list?nextPageToken=secondpagetoken&pageSize=10&randomProperty=blah',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          items: ['fifth'],
+          links: {
+            self: 'blah-blah',
+          },
+        },
+      });
+
+    const result = await client.paginate(client.listPosts, {
+      filter: 'something',
+    });
+
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(request).toHaveBeenNthCalledWith(1, {
+      method: 'GET',
+      params: {
+        filter: 'something',
+      },
+      url: '/posts/list',
+    });
+    // After first requests, inherits default page size
+    expect(request).toHaveBeenNthCalledWith(2, {
+      method: 'GET',
+      params: {
+        filter: 'something',
+        nextPageToken: 'firstpagetoken',
+        pageSize: '10',
+      },
+      url: '/posts/list',
+    });
+    expect(request).toHaveBeenNthCalledWith(3, {
+      method: 'GET',
+      params: {
+        filter: 'something',
+        nextPageToken: 'secondpagetoken',
+        pageSize: '10',
+      },
+      url: '/posts/list',
+    });
+
+    expect(result).toStrictEqual([
+      'first',
+      'second',
+      'third',
+      'fourth',
+      'fifth',
+    ]);
   });
 });
