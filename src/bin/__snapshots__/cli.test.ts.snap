@@ -76,8 +76,7 @@ Options:
                  'none', or a comma-separated list containing one or more of:
                  noAdditionalPropertiesOnObjects,
                  objectPropertiesRequiredByDefault     [string] [default: \\"all\\"]
-  --className    The name of the generated client class.
-                                                    [string] [default: \\"Client\\"]
+  --name         The name of the generated client class.     [string] [required]
 
-Missing required arguments: schema, output"
+Missing required arguments: schema, output, name"
 `;

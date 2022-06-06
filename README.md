@@ -160,6 +160,7 @@ Then, use the `generate-axios-client` command to generate a nicely typed Axios-b
 one-schema generate-axios-client \
   --schema src/schemas/my-service.json \
   --output generated-client.ts \
+  --name MyService \
   --format
 ```
 
@@ -172,10 +173,10 @@ How to use the generated client:
 
 ```typescript
 import axios from 'axios';
-import { Client } from './generated-client';
+import { MyService } from './generated-client';
 
 // Provide any AxiosInstance, customized to your needs.
-const client = new Client(axios.create({ baseURL: 'https://my.api.com/' }));
+const client = new MyService(axios.create({ baseURL: 'https://my.api.com/' }));
 
 const response = await client.createPost({
   message: 'some-message',
