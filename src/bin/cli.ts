@@ -110,10 +110,10 @@ const program = yargs(process.argv.slice(2))
     'generate-axios-client',
     'Generates an Axios client using the specified schema and options.',
     (y) =>
-      getCommonOptions(y).option('className', {
+      getCommonOptions(y).option('name', {
         type: 'string',
         description: 'The name of the generated client class.',
-        default: 'Client',
+        demandOption: true,
       }),
     async (argv) => {
       const spec = loadSchemaFromFile(
@@ -122,7 +122,7 @@ const program = yargs(process.argv.slice(2))
       );
       const output = await generateAxiosClient({
         spec,
-        outputClass: argv.className,
+        outputClass: argv.name,
       });
 
       writeGeneratedFile(argv.output.replace('.ts', '.js'), output.javascript, {
