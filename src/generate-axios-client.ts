@@ -111,6 +111,11 @@ class ${outputClass} {
     })
     .join('\n\n')}
 
+  /**
+   * Paginates exhaustively through the provided \`request\`, using the specified
+   * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
+   * page size for pagination.
+   */
   async paginate(request, data, config) {
     const result = [];
 
