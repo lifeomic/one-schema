@@ -211,9 +211,15 @@ Name: listPaginatedPosts
 Request:
   type: object
   properties:
-    filter: { type: string }
-    nextPageToken: { type: string }
-    pageSize: { type: string }
+    filter:
+      type: string
+      optional: true
+    nextPageToken:
+      type: string
+      optional: true
+    pageSize:
+      type: string
+      optional: true
 Response:
   type: object
   properties:
@@ -222,8 +228,11 @@ Response:
     links:
       type: object
       properties:
-        self: { type: string }
-        next: { type: string }
+        self:
+          type: string
+        next:
+          type: string
+          optional: true
 ```
 
 ```typescript
