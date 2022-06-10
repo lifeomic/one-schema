@@ -52,47 +52,7 @@ Use the `generate-api-types` command to generate helpful types to use for server
 ```
 one-schema generate-api-types \
   --schema schema.yml \
-  --output generated-api.ts \
-  --format
-```
-
-The output (in `generated-api.ts`):
-
-```typescript
-/* eslint-disable */
-import type { OneSchema } from '@lifeomic/one-schema';
-
-export type Endpoints = {
-  'POST /posts': {
-    Request: {
-      message: string;
-    };
-    PathParams: {};
-    Response: Post;
-  };
-  'GET /posts': {
-    Request: {
-      filter: string;
-    };
-    PathParams: {};
-    Response: Post[];
-  };
-};
-
-export type Post = {
-  /**
-   * The post's unique identifier.
-   */
-  id: string;
-  /**
-   * The post message.
-   */
-  message: string;
-};
-
-export const Schema: OneSchema<Endpoints> = {
-  // ... the full schema definition, as a JavaScript object.
-};
+  --output generated-api.ts
 ```
 
 If you're building a Koa app, you can use these generated types with the `implementSchema` function to provide a type-safe interface for implementing your API specification:
@@ -160,8 +120,7 @@ Then, use the `generate-axios-client` command to generate a nicely typed Axios-b
 one-schema generate-axios-client \
   --schema src/schemas/my-service.json \
   --output generated-client.ts \
-  --name MyService \
-  --format
+  --name MyService
 ```
 
 This command will output two files:
@@ -255,8 +214,7 @@ one-schema generate-open-api-spec \
   --schema schema.yml \
   --output openapi-schema.json \
   --apiVersion "1.0.0" \
-  --apiTitle "Simple API" \
-  --format
+  --apiTitle "Simple API"
 ```
 
 The output (in `generated-openapi-schema.json`):
