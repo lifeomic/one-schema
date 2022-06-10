@@ -45,7 +45,7 @@
     "koa-router": "^10.1.1",
     "openapi-schema-validator": "^11.0.1",
     "prettier": "^2.6.2",
-    "semantic-release": "^19.0.2",
+    "semantic-release": "^19.0.3",
     "tmp": "^0.2.1",
     "ts-jest": "^28.0.3",
     "ts-node": "^10.8.0",
