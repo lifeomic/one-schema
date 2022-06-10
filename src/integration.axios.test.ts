@@ -1,10 +1,13 @@
 import { writeFileSync } from 'fs';
 import { format } from 'prettier';
+import Koa from 'koa';
+import bodyparser = require('koa-bodyparser');
 import { OneSchemaDefinition } from '.';
 import {
   generateAxiosClient,
   GenerateAxiosClientInput,
 } from './generate-axios-client';
+import { useServiceClient } from './test-utils';
 
 const testGeneratedFile = (ext: string) => `${__dirname}/test-generated${ext}`;
 
@@ -14,7 +17,37 @@ const generateAndFormat = (input: GenerateAxiosClientInput) =>
     declaration: format(source.declaration, { parser: 'typescript' }),
   }));
 
-const prepare = async () => {
+const mockMiddleware = jest.fn();
+
+/**
+ * We use an actual HTTP server to help with assertions. Why: this
+ * helps us protect against supply chain problems with Axios, and
+ * confirm end-behavior (rather than just assert "we passed the right
+ * parameters to Axios").
+ */
+const context = useServiceClient({
+  service: new Koa()
+    .use(bodyparser())
+    .use((ctx, next) => {
+      ctx.status = 200;
+      // Just return data about the request, to be used for assertions.
+      ctx.body = {
+        method: ctx.method,
+        query: ctx.query,
+        path: ctx.path,
+        body: ctx.request.body,
+      };
+      return next();
+    })
+    .use(mockMiddleware),
+});
+
+/** The "well-typed" client generated from the schema. */
+let client: any;
+
+beforeEach(async () => {
+  mockMiddleware.mockReset().mockImplementation((ctx, next) => next());
+
   const spec: OneSchemaDefinition = {
     Resources: {},
     Endpoints: {
@@ -60,6 +93,7 @@ const prepare = async () => {
           additionalProperties: false,
           properties: {
             filter: { type: 'string' },
+            url: { type: 'string' },
             nextPageToken: { type: 'string' },
             pageSize: { type: 'string' },
           },
@@ -92,122 +126,124 @@ const prepare = async () => {
   writeFileSync(testGeneratedFile('.d.ts'), output.declaration);
 
   const { Service } = await import(testGeneratedFile('.js'));
-
-  const request = jest.fn();
-  const client = new Service({ request });
-  return { client, request };
-};
+  client = new Service(context.client);
+});
 
 describe('integration tests', () => {
   test('compile + execute', async () => {
-    const { client, request } = await prepare();
-
     expect(client).toMatchObject({
       getPosts: expect.any(Function),
       putPost: expect.any(Function),
     });
 
-    await client.getPosts({ input: 'some-input' });
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenNthCalledWith(1, {
+    const getResult = await client.getPosts({ input: 'some-input' });
+    expect(mockMiddleware).toHaveBeenCalledTimes(1);
+    expect(getResult.data).toStrictEqual({
       method: 'GET',
-      url: '/posts',
-      params: {
+      path: '/posts',
+      body: {},
+      query: {
         input: 'some-input',
       },
     });
 
-    await client.putPost({ id: 'some-id', message: 'some-message' });
-    expect(request).toHaveBeenCalledTimes(2);
-    expect(request).toHaveBeenNthCalledWith(2, {
+    const putResult = await client.putPost({
+      id: 'some-id',
+      message: 'some-message',
+    });
+    expect(mockMiddleware).toHaveBeenCalledTimes(2);
+    expect(putResult.data).toStrictEqual({
       method: 'PUT',
-      url: '/posts/some-id',
-      data: {
+      path: '/posts/some-id',
+      body: {
         message: 'some-message',
       },
+      query: {},
     });
   });
 
   test('generated code URI-encodes path parameters', async () => {
-    const { client, request } = await prepare();
+    const result = await client.putPost({
+      id: 'some,bogus,param',
+      message: 'some-message',
+    });
 
-    await client.putPost({ id: 'some,bogus,param', message: 'some-message' });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
+    expect(mockMiddleware).toHaveBeenCalledTimes(1);
+    expect(result.data).toStrictEqual({
       method: 'PUT',
-      url: '/posts/some%2Cbogus%2Cparam',
-      data: {
+      path: '/posts/some%2Cbogus%2Cparam',
+      body: {
         message: 'some-message',
       },
+      query: {},
     });
   });
 
   test('generated code URI-encodes query parameters', async () => {
-    const { client, request } = await prepare();
+    const result = await client.listPosts({ filter: 'some/evil/string' });
 
-    await client.listPosts({ filter: 'some/evil/string' });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
+    expect(mockMiddleware).toHaveBeenCalledTimes(1);
+    expect(result.data).toStrictEqual({
       method: 'GET',
-      url: '/posts/list',
-      params: {
+      path: '/posts/list',
+      body: {},
+      query: {
         filter: 'some%2Fevil%2Fstring',
       },
     });
   });
 
   test('generated code does not send undefined query parameters', async () => {
-    const { client, request } = await prepare();
+    const result = await client.listPosts({ filter: undefined });
 
-    await client.listPosts({ filter: undefined });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(request).toHaveBeenCalledWith({
+    expect(mockMiddleware).toHaveBeenCalledTimes(1);
+    expect(result.data).toStrictEqual({
       method: 'GET',
-      url: '/posts/list',
-      params: {},
+      path: '/posts/list',
+      body: {},
+      query: {},
     });
   });
 
   test('pagination', async () => {
-    const { client, request } = await prepare();
+    const requestSpy = jest.spyOn(client.client, 'request');
 
-    request
-      .mockResolvedValueOnce({
-        data: {
-          items: ['first', 'second'],
-          links: {
-            self: 'blah-blah',
-            next: '/posts/list?nextPageToken=firstpagetoken&pageSize=10&randomProperty=blah',
-          },
-        },
+    mockMiddleware
+      .mockImplementationOnce((ctx) => {
+        if (ctx.body)
+          ctx.body = {
+            items: ['first', 'second'],
+            links: {
+              self: 'blah-blah',
+              next: '/posts/list?nextPageToken=firstpagetoken&pageSize=10&randomProperty=blah',
+            },
+          };
       })
-      .mockResolvedValueOnce({
-        data: {
+      .mockImplementationOnce((ctx) => {
+        ctx.body = {
           items: ['third', 'fourth'],
           links: {
             self: 'blah-blah',
             next: '/posts/list?nextPageToken=secondpagetoken&pageSize=10&randomProperty=blah',
           },
-        },
+        };
       })
-      .mockResolvedValueOnce({
-        data: {
+      .mockImplementationOnce((ctx) => {
+        ctx.body = {
           items: ['fifth'],
           links: {
             self: 'blah-blah',
           },
-        },
+        };
       });
 
     const result = await client.paginate(client.listPosts, {
       filter: 'something',
     });
 
-    expect(request).toHaveBeenCalledTimes(3);
-    expect(request).toHaveBeenNthCalledWith(1, {
+    expect(mockMiddleware).toHaveBeenCalledTimes(3);
+    expect(requestSpy).toHaveBeenCalledTimes(3);
+    expect(requestSpy).toHaveBeenNthCalledWith(1, {
       method: 'GET',
       params: {
         filter: 'something',
@@ -215,7 +251,7 @@ describe('integration tests', () => {
       url: '/posts/list',
     });
     // After first requests, inherits default page size
-    expect(request).toHaveBeenNthCalledWith(2, {
+    expect(requestSpy).toHaveBeenNthCalledWith(2, {
       method: 'GET',
       params: {
         filter: 'something',
@@ -224,7 +260,7 @@ describe('integration tests', () => {
       },
       url: '/posts/list',
     });
-    expect(request).toHaveBeenNthCalledWith(3, {
+    expect(requestSpy).toHaveBeenNthCalledWith(3, {
       method: 'GET',
       params: {
         filter: 'something',
