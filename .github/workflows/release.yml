@@ -25,6 +25,4 @@ jobs:
           yarn test
           yarn build
       - name: Publish
-        run: |
-          yarn semantic-release
-          npm access grant read-only lifeomic:readonly-developers '@lifeomic/one-schema'
+        run: yarn semantic-release
