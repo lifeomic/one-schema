@@ -68,14 +68,12 @@ const substituteParams = (url, params) =>
     url
   );
 
-const removePathParams = (url, params, encode) =>
+const removePathParams = (url, params) =>
   Object.entries(params)
     .filter(([key, value]) => value !== undefined)
     .reduce(
       (accum, [name, value]) =>
-        url.includes(":" + name)
-          ? accum
-          : { ...accum, [name]: encode ? encodeURIComponent(value) : value },
+        url.includes(":" + name) ? accum : { ...accum, [name]: value },
       {}
     );
 
@@ -97,7 +95,7 @@ class Client {
     return this.client.request({
       ...config,
       method: "GET",
-      params: removePathParams("/posts", data, true),
+      params: removePathParams("/posts", data),
       url: substituteParams("/posts", data),
     });
   }
@@ -106,7 +104,7 @@ class Client {
     return this.client.request({
       ...config,
       method: "PUT",
-      data: removePathParams("/posts/:id", data, false),
+      data: removePathParams("/posts/:id", data),
       url: substituteParams("/posts/:id", data),
     });
   }

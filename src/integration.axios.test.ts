@@ -180,16 +180,15 @@ describe('integration tests', () => {
   });
 
   test('generated code URI-encodes query parameters', async () => {
-    const result = await client.listPosts({ filter: 'some/evil/string' });
+    const filter = 'some/evil/string';
+    const result = await client.listPosts({ filter });
 
     expect(mockMiddleware).toHaveBeenCalledTimes(1);
     expect(result.data).toStrictEqual({
       method: 'GET',
       path: '/posts/list',
       body: {},
-      query: {
-        filter: 'some%2Fevil%2Fstring',
-      },
+      query: { filter },
     });
   });
 
