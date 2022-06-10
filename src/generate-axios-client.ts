@@ -64,14 +64,12 @@ const substituteParams = (url, params) =>
     url
   );
 
-const removePathParams = (url, params, encode) => 
+const removePathParams = (url, params) => 
   Object.entries(params)
     .filter(([key, value]) => value !== undefined)
     .reduce(
       (accum, [name, value]) =>
-        url.includes(':' + name)
-          ? accum
-          : { ...accum, [name]: encode ? encodeURIComponent(value) : value },
+        url.includes(':' + name) ? accum : { ...accum, [name]: value },
       {}
     );
 
@@ -101,8 +99,8 @@ class ${outputClass} {
             method: '${method}',
             ${
               useQueryParams
-                ? `params: removePathParams('${url}', data, true),`
-                : `data: removePathParams('${url}', data, false),`
+                ? `params: removePathParams('${url}', data),`
+                : `data: removePathParams('${url}', data),`
             }
             url: substituteParams('${url}', data),
           })
