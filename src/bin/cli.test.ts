@@ -54,12 +54,20 @@ describe('input validation snapshots', () => {
       input: 'generate-bogus',
     },
     {
-      test: 'missing arguments - Axios generation',
+      test: 'missing arguments - generate-axios-client',
       input: 'generate-axios-client',
     },
     {
-      test: 'missing arguments - API generation',
+      test: 'missing arguments - generate-api-types',
       input: 'generate-api-types',
+    },
+    {
+      test: 'missing arguments - generate-open-api-spec',
+      input: 'generate-open-api-spec',
+    },
+    {
+      test: 'missing arguments - fetch-remote-schema',
+      input: 'fetch-remote-schema',
     },
   ];
 

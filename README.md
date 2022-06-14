@@ -110,7 +110,7 @@ Projects that want to safely consume a service that uses `one-schema` can perfor
 
 ```
 one-schema fetch-remote-schema \
-  --url lambda://my-service:deployed/private/introspection \
+  --from lambda://my-service:deployed/private/introspection \
   --output src/schemas/my-service.json
 ```
 
