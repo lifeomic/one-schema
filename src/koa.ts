@@ -1,16 +1,7 @@
 import { JSONSchema4 } from 'json-schema';
 import type { ParameterizedContext } from 'koa';
-import type Router = require('koa-router');
+import type Router from 'koa-router';
 import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
-
-// This declare is required to override the "declare" that comes from
-// koa-bodyparser. Without this, the typings from one-schema will be
-// overriden and collapsed into "any".
-declare module 'koa' {
-  interface Request {
-    body?: unknown;
-  }
-}
 
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
   [Name in keyof EndpointsOf<Schema>]: (
