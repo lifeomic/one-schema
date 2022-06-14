@@ -40,7 +40,21 @@ Options:
 Not enough non-option arguments: got 0, need at least 1"
 `;
 
-exports[`input validation snapshots missing arguments - API generation 1`] = `
+exports[`input validation snapshots missing arguments - fetch-remote-schema 1`] = `
+"cli.ts fetch-remote-schema
+
+Fetches a schema from a remote service via introspection.
+
+Options:
+  --help     Show help                                                 [boolean]
+  --version  Show version number                                       [boolean]
+  --from     The url of the remote schema.                   [string] [required]
+  --output   A filepath for the fetched schema.              [string] [required]
+
+Missing required arguments: from, output"
+`;
+
+exports[`input validation snapshots missing arguments - generate-api-types 1`] = `
 "cli.ts generate-api-types
 
 Generates API types using the specified schema and options.
@@ -60,7 +74,7 @@ Options:
 Missing required arguments: schema, output"
 `;
 
-exports[`input validation snapshots missing arguments - Axios generation 1`] = `
+exports[`input validation snapshots missing arguments - generate-axios-client 1`] = `
 "cli.ts generate-axios-client
 
 Generates an Axios client using the specified schema and options.
@@ -79,4 +93,27 @@ Options:
   --name         The name of the generated client class.     [string] [required]
 
 Missing required arguments: schema, output, name"
+`;
+
+exports[`input validation snapshots missing arguments - generate-open-api-spec 1`] = `
+"cli.ts generate-open-api-spec
+
+Generates an OpenAPI v3.1.0 spec using the specified schema and options.
+
+Options:
+  --help         Show help                                             [boolean]
+  --version      Show version number                                   [boolean]
+  --schema       The filepath of the schema spec.            [string] [required]
+  --output       A filepath for the generated output.        [string] [required]
+  --format       Whether to format the output using prettier.
+                                                       [boolean] [default: true]
+  --assumptions  Which JSONSchema assumptions to apply. Must be either 'all',
+                 'none', or a comma-separated list containing one or more of:
+                 noAdditionalPropertiesOnObjects,
+                 objectPropertiesRequiredByDefault     [string] [default: \\"all\\"]
+  --apiVersion   The current version of this API schema.
+                                                     [string] [default: \\"1.0.0\\"]
+  --apiTitle     The API title.                              [string] [required]
+
+Missing required arguments: schema, output, apiTitle"
 `;
