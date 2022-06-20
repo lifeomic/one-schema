@@ -4,7 +4,7 @@ import { load } from 'js-yaml';
 import type { JSONSchema4 } from 'json-schema';
 import { OneSchemaDefinition } from '.';
 import { deepCopy } from './generate-endpoints';
-import { transformJSONSchema } from './json-schema';
+import { transformJSONSchema, withResolvedDefinitions } from './json-schema';
 
 export const getPathParams = (name: string) =>
   name
@@ -59,17 +59,22 @@ export const validateSchema = (spec: OneSchemaDefinition) => {
 
   for (const [name, { Request }] of Object.entries(spec.Endpoints)) {
     if (Request) {
+      // In order to fully validate the Request schema, we need to
+      // first resolve any $refs
+      const resolved = withResolvedDefinitions(Request, spec.Resources ?? {});
+
       // Requests must be object type.
-      if (Request.type && Request.type !== 'object') {
+      if (resolved.type && resolved.type !== 'object') {
         throw new Error(
           `Detected a non-object Request schema for ${name}. Request schemas must be objects.`,
         );
       }
 
+      // Request schemas cannot have colliding path params + input properties. If they
+      // do, generated clients will not work correctly.
       const collidingParam = getPathParams(name).find(
-        (param) => param in (Request.properties ?? {}),
+        (param) => param in (resolved.properties ?? {}),
       );
-
       if (collidingParam) {
         throw new Error(
           `The ${collidingParam} parameter was declared as a path parameter and a Request property for ${name}. Rename either the path parameter or the request property to avoid a collision.`,

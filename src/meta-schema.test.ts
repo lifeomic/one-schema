@@ -207,6 +207,38 @@ describe('validateSchema', () => {
     ).not.toThrow();
   });
 
+  test('checks for malformed refs', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'POST /posts': {
+            Name: 'something',
+            Request: {
+              $ref: 'bogus-ref',
+            },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError('Encountered an invalid ref: bogus-ref');
+  });
+
+  test('checks for invalid refs', () => {
+    expect(() =>
+      validateSchema({
+        Endpoints: {
+          'POST /posts': {
+            Name: 'something',
+            Request: {
+              $ref: '#/definitions/Bogus',
+            },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError('Encountered an invalid ref: #/definitions/Bogus');
+  });
+
   test('checks for object types in Request schemas', () => {
     expect(() =>
       validateSchema({
@@ -214,6 +246,27 @@ describe('validateSchema', () => {
           'POST posts': {
             Name: 'something',
             Request: { type: 'array' },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'Detected a non-object Request schema for POST posts. Request schemas must be objects.',
+    );
+  });
+
+  test('checks for object types in Request schemas through refs', () => {
+    expect(() =>
+      validateSchema({
+        Resources: {
+          Post: {
+            type: 'array',
+          },
+        },
+        Endpoints: {
+          'POST posts': {
+            Name: 'something',
+            Request: { $ref: '#/definitions/Post' },
             Response: {},
           },
         },
@@ -236,6 +289,31 @@ describe('validateSchema', () => {
                 message: { type: 'string' },
               },
             },
+            Response: {},
+          },
+        },
+      }),
+    ).toThrowError(
+      'The id parameter was declared as a path parameter and a Request property for PUT posts/:id. Rename either the path parameter or the request property to avoid a collision.',
+    );
+  });
+
+  test('checks for colliding path/request parameters through refs', () => {
+    expect(() =>
+      validateSchema({
+        Resources: {
+          Post: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+        Endpoints: {
+          'PUT posts/:id': {
+            Name: 'something',
+            Request: { $ref: '#/definitions/Post' },
             Response: {},
           },
         },
