@@ -3,6 +3,24 @@ import type { ParameterizedContext } from 'koa';
 import type Router from 'koa-router';
 import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
 
+/**
+ * This declare is required to override the "declare" statements common in Koa
+ * bodyparser libraries, including:
+ *   - @types/koa-bodyparser (as of v4.3.7)
+ *   - koa-body (as of v5.0.0)
+ *
+ * Without this declare, installing either of these^ libraries will cause the
+ * typings from one-schema to be overriden and collapsed into "any".
+ *
+ * Unfortunately, adding this declare causes it to conflict with those libraries,
+ * and thus requires consumers to use `skipLibCheck: true`.
+ */
+declare module 'koa' {
+  interface Request {
+    body?: unknown;
+  }
+}
+
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
   [Name in keyof EndpointsOf<Schema>]: (
     context: ParameterizedContext<
