@@ -193,12 +193,23 @@ export const loadSchemaFromFile = (
 ): OneSchemaDefinition => {
   let spec: any = load(readFileSync(filename, { encoding: 'utf-8' }));
 
-  // Check if this in an introspection result. If so, grab the schema.
-  if (typeof spec === 'object' && 'schema' in spec) {
+  let applyAssumptions = true;
+
+  // Check if this in an introspection result. If so, grab the schema,
+  // and skip applying assumptions. Schemas served directly from services
+  // should always be correct + complete.
+  const isIntrospectionResult = typeof spec === 'object' && 'schema' in spec;
+  if (isIntrospectionResult) {
     spec = spec.schema;
+    applyAssumptions = false;
+    console.log(
+      'Detected one-schema introspection response. Skipping applying schema assumptions.',
+    );
   }
 
   validateSchema(spec as OneSchemaDefinition);
 
-  return withAssumptions(spec as OneSchemaDefinition, assumptions);
+  return applyAssumptions
+    ? withAssumptions(spec as OneSchemaDefinition, assumptions)
+    : spec;
 };
