@@ -10,6 +10,10 @@ import {
 } from './meta-schema';
 import { IntrospectionResponse } from './types';
 
+beforeEach(() => {
+  jest.spyOn(console, 'log').mockReturnValue(void 0);
+});
+
 describe('assumptions', () => {
   const FIXTURES: {
     name: string;
@@ -190,6 +194,53 @@ describe('loadSchemaFromFile', () => {
     expect(result).toStrictEqual({
       Endpoints: {},
     });
+  });
+
+  test('does not apply assumptions to introspection responses', () => {
+    const introspectionResponse: IntrospectionResponse = {
+      serviceVersion: 'mock-service-version',
+      schema: {
+        Endpoints: {
+          'GET /posts': {
+            Name: 'getPosts',
+            Response: {
+              type: 'object',
+              properties: {
+                something: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const filename = tmpNameSync();
+    writeFileSync(filename, dump(introspectionResponse), {
+      encoding: 'utf-8',
+    });
+
+    const result = loadSchemaFromFile(filename, {
+      objectPropertiesRequiredByDefault: true,
+      noAdditionalPropertiesOnObjects: true,
+    });
+
+    expect(result).toStrictEqual({
+      Endpoints: {
+        'GET /posts': {
+          Name: 'getPosts',
+          Response: {
+            type: 'object',
+            properties: {
+              something: { type: 'string' },
+            },
+          },
+        },
+      },
+    });
+
+    expect(console.log).toHaveBeenCalledWith(
+      'Detected one-schema introspection response. Skipping applying schema assumptions.',
+    );
   });
 });
 
