@@ -25,12 +25,16 @@ Resources:
         description: The post message.
         type: string
 Endpoints:
-  POST /posts:
-    Name: createPost
+  PUT /posts/:id:
+    Name: upsertPost
     Request:
-      type: 'object'
+      type: object
       properties:
         message: { type: string }
+    Response:
+      $ref: '#/definitions/Post'
+  GET /posts/:id:
+    Name: getPostById
     Response:
       $ref: '#/definitions/Post'
   GET /posts:
@@ -44,6 +48,60 @@ Endpoints:
       items:
         $ref: '#/definitions/Post'
 ```
+
+### Defining Endpoints
+
+Let's look at one endpoint from the schema above, and break down its parts:
+
+```yaml
+PUT /posts/:id:
+  Name: upsertPost
+  Request:
+    type: object
+    properties:
+      message: { type: string }
+  Response:
+    $ref: '#/definitions/Post'
+```
+
+- The `PUT /posts/:id` key uniquely identifies this endpoint using Koa-style route syntax.
+
+- The `Name` entry is a human-readable name for the endpoint. Every endpoint must have a `Name`
+  entry. This value is used for generating nice clients for the application. It should be alphanumeric
+  and camelCased.
+
+- The `Request` entry is a JSONSchema definition that describes a valid request object. `Request`
+  schemas are optional for `GET` and `DELETE` endpoints.
+
+- The `Response` entry is a JSONSchema definition that describes the response that this endpoint
+  returns to clients.
+
+#### Query Parameters
+
+Let's look at another example from the schema above:
+
+```yaml
+GET /posts:
+  Name: listPosts
+  Request:
+    type: object
+    properties:
+      filter: { type: string }
+  Response:
+    type: array
+    items:
+      $ref: '#/definitions/Post'
+```
+
+Defining a `Request` schema for a `GET` or `DELETE` request will cause that schema to be applied
+against the request's _query parameters_.
+
+The schema will be checked against Koa's runtime representation of the query parameters. So, these
+assumptions should be kept in mind:
+
+- The `Request` schema _must_ be an `object` type JSON schema.
+- All of the `properties` entries in the schema should validate against `string`-like types. Koa does
+  not support parsing query parameters as `number` values, for example.
 
 ### API Type Generation
 
@@ -137,7 +195,7 @@ import { MyService } from './generated-client';
 // Provide any AxiosInstance, customized to your needs.
 const client = new MyService(axios.create({ baseURL: 'https://my.api.com/' }));
 
-const response = await client.createPost({
+const response = await client.upsertPost({
   message: 'some-message',
 });
 
