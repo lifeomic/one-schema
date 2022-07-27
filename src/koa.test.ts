@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Koa = require('koa');
 import bodyParser = require('koa-bodyparser');
-import Router = require('koa-router');
+import Router = require('@koa/router');
 import { implementSchema } from '.';
 import { withAssumptions } from './meta-schema';
 

@@ -1,13 +1,12 @@
 import { JSONSchema4 } from 'json-schema';
-import type { ParameterizedContext } from 'koa';
-import type Router from 'koa-router';
+import type { ExtendableContext, ParameterizedContext } from 'koa';
+import type Router from '@koa/router';
 import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
 
 /**
  * We use this type to very cleanly remove these fields from the Koa context, so
  * that we can replace the fields with our strict types from the generated schema.
  *
- * - `params`
  * - `request.body`
  * - `request.query`
  *
@@ -24,29 +23,37 @@ import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
  * By explicitly removing the fields from the context, then re-adding them, we can be
  * sure they are typed correctly.
  */
-type WithTypedFieldsRemoved<T> =
-  // Omit params and request
-  Omit<T, 'params' | 'request'> & {
+type ExtendableContextWithRequestFieldsRemoved =
+  // Omit request entirely
+  Omit<ExtendableContext, 'request'> & {
     // Re-add request, but without the "body" or "query" fields.
-    request: Omit<T, 'body' | 'query'>;
+    request: Omit<ExtendableContext['request'], 'body' | 'query'>;
   };
 
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
   [Name in keyof EndpointsOf<Schema>]: (
-    // It's important that we remove our "typed" fields from the root `ParameterizedContext`,
-    // and not from the "inner" `Context` type.
-    //
-    // If we remove from the "inner" `Context` type, the `ParameterizedContext` will
-    // effectively just "re-add" the fields we removed.
-    //
-    // Basically, the "inner" Context can only be used for _extending_ the context,
-    // but not for _restricting_ it.
-    context: WithTypedFieldsRemoved<ParameterizedContext<State, Context>> & {
-      params: EndpointsOf<Schema>[Name]['PathParams'];
-      request: Name extends `${'GET' | 'DELETE'} ${string}`
-        ? { query: EndpointsOf<Schema>[Name]['Request'] }
-        : { body: EndpointsOf<Schema>[Name]['Request'] };
-    },
+    // prettier-ignore
+    context:
+      // 1. Start with a context that has request.body and request.query removed.
+      // This context also importantly does _not_ have the `params` property included,
+      // since it comes from a core `koa` type, rather than from `@koa/router`.
+      & ExtendableContextWithRequestFieldsRemoved
+      // 2. Now, we add the generated + well-typed `params`, `request.body`, and
+      // `request.query` properties.
+      & {
+          params: EndpointsOf<Schema>[Name]['PathParams'];
+          request: Name extends `${'GET' | 'DELETE'} ${string}`
+            ? { query: EndpointsOf<Schema>[Name]['Request'] }
+            : { body: EndpointsOf<Schema>[Name]['Request'] };
+        }
+      // 3. Now, add the `state` property and merge in the arbitrary custom context, to
+      // essentially mimic the behavior of koa's `ParameterizedContext`.
+      //
+      // Why not just use ParameterizedContext: When we tried to use ParameterizedContext
+      // directly, it was incompatible with Omit (omitting a single property resulted in
+      // a fully empty object).
+      & { state: State; }
+      & Context,
   ) =>
     | EndpointsOf<Schema>[Name]['Response']
     | Promise<EndpointsOf<Schema>[Name]['Response']>;
@@ -142,7 +149,7 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
     const [method, path] = endpoint.split(' ');
 
     /** A shared route handler. */
-    const handler: Router.IMiddleware<State, Context> = async (ctx, next) => {
+    const handler: Router.Middleware<State, Context> = async (ctx, next) => {
       // 1. Validate the input data.
       const requestSchema = schema.Endpoints[endpoint].Request;
       if (requestSchema) {

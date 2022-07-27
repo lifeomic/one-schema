@@ -118,7 +118,7 @@ If you're building a Koa app, you can use these generated types with the `implem
 ```typescript
 // app.ts
 import Koa from 'koa';
-import Router from 'koa-router';
+import Router from '@koa/router';
 
 import { implementSchema } from '@lifeomic/one-schema';
 
