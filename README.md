@@ -15,30 +15,30 @@ First, define an API schema file. Schemas look like this:
 ```yml
 # schema.yml
 Resources:
-  Post:
+  Item:
     type: 'object'
     properties:
       id:
-        description: The post's unique identifier.
+        description: The item's unique identifier.
         type: string
-      message:
-        description: The post message.
+      label:
+        description: The item's label.
         type: string
 Endpoints:
-  PUT /posts/:id:
-    Name: upsertPost
+  PUT /items/:id:
+    Name: upsertItem
     Request:
       type: object
       properties:
-        message: { type: string }
+        label: { type: string }
     Response:
-      $ref: '#/definitions/Post'
-  GET /posts/:id:
-    Name: getPostById
+      $ref: '#/definitions/Item'
+  GET /items/:id:
+    Name: getItemById
     Response:
-      $ref: '#/definitions/Post'
-  GET /posts:
-    Name: listPosts
+      $ref: '#/definitions/Item'
+  GET /items:
+    Name: listItems
     Request:
       type: object
       properties:
@@ -46,7 +46,7 @@ Endpoints:
     Response:
       type: array
       items:
-        $ref: '#/definitions/Post'
+        $ref: '#/definitions/Item'
 ```
 
 ### Defining Endpoints
@@ -54,17 +54,17 @@ Endpoints:
 Let's look at one endpoint from the schema above, and break down its parts:
 
 ```yaml
-PUT /posts/:id:
-  Name: upsertPost
+PUT /items/:id:
+  Name: upsertItem
   Request:
     type: object
     properties:
-      message: { type: string }
+      label: { type: string }
   Response:
-    $ref: '#/definitions/Post'
+    $ref: '#/definitions/Item'
 ```
 
-- The `PUT /posts/:id` key uniquely identifies this endpoint using Koa-style route syntax.
+- The `PUT /items/:id` key uniquely identifies this endpoint using Koa-style route syntax.
 
 - The `Name` entry is a human-readable name for the endpoint. Every endpoint must have a `Name`
   entry. This value is used for generating nice clients for the application. It should be alphanumeric
@@ -81,8 +81,8 @@ PUT /posts/:id:
 Let's look at another example from the schema above:
 
 ```yaml
-GET /posts:
-  Name: listPosts
+GET /items:
+  Name: listItems
   Request:
     type: object
     properties:
@@ -90,7 +90,7 @@ GET /posts:
   Response:
     type: array
     items:
-      $ref: '#/definitions/Post'
+      $ref: '#/definitions/Item'
 ```
 
 Defining a `Request` schema for a `GET` or `DELETE` request will cause that schema to be applied
@@ -135,19 +135,19 @@ implementSchema(Schema, {
     return data;
   },
   implementation: {
-    'POST /posts': (ctx) => {
+    'POST /items': (ctx) => {
       // `ctx.request.body` is well-typed and has been run-time validated.
-      console.log(ctx.request.body.message);
+      console.log(ctx.request.body.label);
 
       // TypeScript enforces that this matches the `Response` schema.
-      return { id: '123', message: 'test message' };
+      return { id: '123', label: 'test label' };
     },
-    'GET /posts': (ctx) => {
+    'GET /items': (ctx) => {
       // `ctx.request.query` is well-typed and has been run-time validated
       console.log(ctx.request.query.filter);
 
       // TypeScript enforces that this matches the `Response` schema.
-      return [{ id: '123', message: 'test message' }];
+      return [{ id: '123', label: 'test label' }];
     },
   },
   introspection: {
@@ -195,17 +195,17 @@ import { MyService } from './generated-client';
 // Provide any AxiosInstance, customized to your needs.
 const client = new MyService(axios.create({ baseURL: 'https://my.api.com/' }));
 
-const response = await client.upsertPost({
-  message: 'some-message',
+const response = await client.upsertItem({
+  label: 'some-label',
 });
 
 console.log(response.data);
 // {
 //   id: 'some-id',
-//   message: 'some-message'
+//   label: 'some-label'
 // }
 
-const response = await client.listPosts({
+const response = await client.listItems({
   filter: 'some-filter',
 });
 
@@ -213,7 +213,7 @@ console.log(response.data);
 // [
 //   {
 //     id: 'some-id',
-//     message: 'some-message'
+//     label: 'some-label'
 //   },
 //   ...
 // ]
@@ -225,7 +225,7 @@ The generated client provides a built-in helper for reading from paginated LifeO
 
 ```yaml
 # Example endpoint
-Name: listPaginatedPosts
+Name: listPaginatedItems
 Request:
   type: object
   properties:
@@ -242,7 +242,7 @@ Response:
   type: object
   properties:
     items:
-      $ref: '#/definitions/Post'
+      $ref: '#/definitions/Item'
     links:
       type: object
       properties:
@@ -255,12 +255,12 @@ Response:
 
 ```typescript
 // Usage
-const result = await client.paginate(client.listPaginatedPosts, {
+const result = await client.paginate(client.listPaginatedItems, {
   filter: '...',
   pageSize: '10',
 });
 
-result.length; // result is the fully-paginated list of posts
+result.length; // result is the fully-paginated list of items
 ```
 
 ### OpenAPI Spec generation
@@ -286,33 +286,33 @@ The output (in `generated-openapi-schema.json`):
   },
   "components": {
     "schemas": {
-      "Post": {
+      "Item": {
         "additionalProperties": false,
         "properties": {
           "id": {
-            "description": "The post's unique identifier.",
+            "description": "The item's unique identifier.",
             "type": "string"
           },
-          "message": {
-            "description": "The post message.",
+          "label": {
+            "description": "The item label.",
             "type": "string"
           }
         },
-        "required": ["id", "message"]
+        "required": ["id", "label"]
       }
     }
   },
   "paths": {
-    "/posts": {
-      "post": {
-        "operationId": "createPost",
+    "/items": {
+      "item": {
+        "operationId": "createItem",
         "responses": {
           "200": {
             "description": "TODO",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Post"
+                  "$ref": "#/components/schemas/Item"
                 }
               }
             }
@@ -325,18 +325,18 @@ The output (in `generated-openapi-schema.json`):
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
-                  "message": {
+                  "label": {
                     "type": "string"
                   }
                 },
-                "required": ["message"]
+                "required": ["label"]
               }
             }
           }
         }
       },
       "get": {
-        "operationId": "listPosts",
+        "operationId": "listItems",
         "responses": {
           "200": {
             "description": "TODO",
@@ -345,7 +345,7 @@ The output (in `generated-openapi-schema.json`):
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Post"
+                    "$ref": "#/components/schemas/Item"
                   }
                 }
               }
@@ -381,20 +381,20 @@ By default, all assumptions are applied.
 Enabling this assumption will automatically add `additionalProperties: false` to all `object` JSONSchemas. Example:
 
 ```yaml
-PUT /posts/:id:
+PUT /items/:id:
   Request:
     type: object
     properties:
-      message:
+      label:
         type: string
 
 # Automatically interpreted as:
-PUT /posts/:id:
+PUT /items/:id:
   Request:
     type: object
     additionalProperties: false
     properties:
-      message:
+      label:
         type: string
 ```
 
@@ -403,24 +403,24 @@ PUT /posts/:id:
 Enabling this assumption will automatically add mark every object property as "required", unless that property's schema has `optional: true` defined. Example:
 
 ```yaml
-PUT /posts/:id:
+PUT /items/:id:
   Request:
     type: object
     properties:
-      message:
+      label:
         type: string
       title:
         type: string
         optional: true
 
 # Automatically interpreted as:
-PUT /posts/:id:
+PUT /items/:id:
   Request:
     type: object
     required:
-      - message
+      - label
     properties:
-      message:
+      label:
         type: string
       title:
         type: string
