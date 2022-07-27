@@ -51,10 +51,30 @@ test('setting a 200-level response code overrides the response', async () => {
       implementation: {
         'DELETE /post/:id': (ctx) => {
           ctx.response.status = 204;
+
+          // This comment essentially serves as a "test" that the `body` property
+          // has been removed from the `request` object.
+          // @ts-expect-error
+          ctx.request.body;
+
+          // This line serves as an implicit test that the `query` property
+          // is present on the `request` object.
+          ctx.request.query;
+
           return {};
         },
         'POST /posts': (ctx) => {
           ctx.response.status = 301;
+
+          // This line serves as an implicit test that the `body` property
+          // is present on the `request` object.
+          ctx.request.body;
+
+          // This comment essentially serves as a "test" that the `query` property
+          // has been removed from the `request` object.
+          // @ts-expect-error
+          ctx.request.query;
+
           return {};
         },
       },
