@@ -4,34 +4,49 @@ import type Router from 'koa-router';
 import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
 
 /**
- * This declare is required to override the "declare" statements common in Koa
- * bodyparser libraries, including:
- *   - @types/koa-bodyparser (as of v4.3.7)
- *   - koa-body (as of v5.0.0)
+ * We use this type to very cleanly remove these fields from the Koa context, so
+ * that we can replace the fields with our strict types from the generated schema.
  *
- * Without this declare, installing either of these^ libraries will cause the
- * typings from one-schema to be overriden and collapsed into "any".
+ * - `params`
+ * - `request.body`
+ * - `request.query`
  *
- * Unfortunately, adding this declare causes it to conflict with those libraries,
- * and thus requires consumers to use `skipLibCheck: true`.
+ * This is primarily important for `request.body` -- the others are included in the
+ * same why for simplicity.
+ *
+ * Why it's important for `request.body`: most popular Koa body parser middlewares use a
+ * global `declare` statement to mark the `body` field as being present on the request.
+ *
+ * Most of these libraries declare the field as `body: any`. With this type declaration,
+ * it becomes impossible to augment the type, since any more stringent types are just
+ * "collapsed" into the `any` type, resulting in a final type of `any`.
+ *
+ * By explicitly removing the fields from the context, then re-adding them, we can be
+ * sure they are typed correctly.
  */
-declare module 'koa' {
-  interface Request {
-    body?: unknown;
-  }
-}
+type WithTypedFieldsRemoved<T> =
+  // Omit params and request
+  Omit<T, 'params' | 'request'> & {
+    // Re-add request, but without the "body" or "query" fields.
+    request: Omit<T, 'body' | 'query'>;
+  };
 
 export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
   [Name in keyof EndpointsOf<Schema>]: (
-    context: ParameterizedContext<
-      State,
-      Context & {
-        params: EndpointsOf<Schema>[Name]['PathParams'];
-        request: Name extends `${'GET' | 'DELETE'} ${string}`
-          ? { query: EndpointsOf<Schema>[Name]['Request'] }
-          : { body: EndpointsOf<Schema>[Name]['Request'] };
-      }
-    >,
+    // It's important that we remove our "typed" fields from the root `ParameterizedContext`,
+    // and not from the "inner" `Context` type.
+    //
+    // If we remove from the "inner" `Context` type, the `ParameterizedContext` will
+    // effectively just "re-add" the fields we removed.
+    //
+    // Basically, the "inner" Context can only be used for _extending_ the context,
+    // but not for _restricting_ it.
+    context: WithTypedFieldsRemoved<ParameterizedContext<State, Context>> & {
+      params: EndpointsOf<Schema>[Name]['PathParams'];
+      request: Name extends `${'GET' | 'DELETE'} ${string}`
+        ? { query: EndpointsOf<Schema>[Name]['Request'] }
+        : { body: EndpointsOf<Schema>[Name]['Request'] };
+    },
   ) =>
     | EndpointsOf<Schema>[Name]['Response']
     | Promise<EndpointsOf<Schema>[Name]['Response']>;
