@@ -30,7 +30,18 @@ type ExtendableContextWithRequestFieldsRemoved =
     request: Omit<ExtendableContext['request'], 'body' | 'query'>;
   };
 
-export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
+type StateOfRouter<RouterType> = RouterType extends Router<infer State, any>
+  ? State
+  : never;
+
+type ContextOfRouter<RouterType> = RouterType extends Router<any, infer Context>
+  ? Context
+  : never;
+
+export type ImplementationOf<
+  Schema extends OneSchema<any>,
+  RouterType extends Router<any, any>,
+> = {
   [Name in keyof EndpointsOf<Schema>]: (
     // prettier-ignore
     context:
@@ -52,8 +63,8 @@ export type ImplementationOf<Schema extends OneSchema<any>, State, Context> = {
       // Why not just use ParameterizedContext: When we tried to use ParameterizedContext
       // directly, it was incompatible with Omit (omitting a single property resulted in
       // a fully empty object).
-      & { state: State; }
-      & Context,
+      & { state: StateOfRouter<RouterType>; }
+      & ContextOfRouter<RouterType>,
   ) =>
     | EndpointsOf<Schema>[Name]['Response']
     | Promise<EndpointsOf<Schema>[Name]['Response']>;
@@ -78,18 +89,17 @@ export type IntrospectionConfig = {
  */
 export type ImplementationConfig<
   Schema extends OneSchema<any>,
-  State,
-  Context,
+  RouterType extends Router<any, any>,
 > = {
   /**
    * The implementation of the API.
    */
-  implementation: ImplementationOf<Schema, State, Context>;
+  implementation: ImplementationOf<Schema, RouterType>;
 
   /**
    * The router to use for implementing the API.
    */
-  on: Router<State, Context>;
+  on: RouterType;
 
   /**
    * A function for parsing the correct data from the provided `data`,
@@ -106,7 +116,10 @@ export type ImplementationConfig<
    * @returns A validated payload.
    */
   parse: <Endpoint extends keyof EndpointsOf<Schema>>(
-    ctx: ParameterizedContext<State, Context>,
+    ctx: ParameterizedContext<
+      StateOfRouter<RouterType>,
+      ContextOfRouter<RouterType>
+    >,
     params: { endpoint: Endpoint; schema: JSONSchema4; data: unknown },
   ) => Schema['Endpoints'][Endpoint]['Request'];
 
@@ -120,14 +133,17 @@ export type ImplementationConfig<
  * @param schema The API OneSchema object.
  * @param config The implementation configuration.
  */
-export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
+export const implementSchema = <
+  Schema extends OneSchema<any>,
+  RouterType extends Router<any, any>,
+>(
   schema: Schema,
   {
     implementation,
     parse,
     on: router,
     introspection,
-  }: ImplementationConfig<Schema, State, Context>,
+  }: ImplementationConfig<Schema, RouterType>,
 ): void => {
   if (introspection) {
     router.get(introspection.route, (ctx, next) => {
@@ -149,7 +165,10 @@ export const implementSchema = <State, Context, Schema extends OneSchema<any>>(
     const [method, path] = endpoint.split(' ');
 
     /** A shared route handler. */
-    const handler: Router.Middleware<State, Context> = async (ctx, next) => {
+    const handler: Router.Middleware<
+      StateOfRouter<RouterType>,
+      ContextOfRouter<RouterType>
+    > = async (ctx, next) => {
       // 1. Validate the input data.
       const requestSchema = schema.Endpoints[endpoint].Request;
       if (requestSchema) {

@@ -87,11 +87,11 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
 });
 
 const executeTest = async (
-  overrides: Partial<ImplementationConfig<any, any, any>>,
+  overrides: Partial<ImplementationConfig<any, Router>>,
   testFn: (client: AxiosInstance) => Promise<void>,
 ) => {
   const ajv = new Ajv();
-  const config: ImplementationConfig<any, any, any> = {
+  const config: ImplementationConfig<any, Router> = {
     on: new Router(),
     parse: (ctx, { schema, data }) => {
       if (ajv.validate(schema, data)) {
@@ -151,6 +151,9 @@ test('GET method', async () => {
     {
       implementation: {
         'GET /posts': (ctx) => {
+          // TypeScript isn't smart enough to determine the correct ctx.request
+          // property here.
+          // @ts-ignore
           return ctx.request.query;
         },
       },
