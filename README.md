@@ -13,10 +13,11 @@ yarn add @lifeomic/one-schema
 First, define an API schema file. Schemas look like this:
 
 ```yml
-# schema.yml
+# 'Resources' are just JSONSchema definitions that can be shared
+# across your endpoints.
 Resources:
   Item:
-    type: 'object'
+    type: object
     properties:
       id:
         description: The item's unique identifier.
@@ -24,6 +25,8 @@ Resources:
       label:
         description: The item's label.
         type: string
+
+# Endpoints is a map of all your endpoints to request + response schemas
 Endpoints:
   PUT /items/:id:
     Name: upsertItem
@@ -33,10 +36,12 @@ Endpoints:
         label: { type: string }
     Response:
       $ref: '#/definitions/Item'
+
   GET /items/:id:
     Name: getItemById
     Response:
       $ref: '#/definitions/Item'
+
   GET /items:
     Name: listItems
     Request:
