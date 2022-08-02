@@ -36,6 +36,7 @@ const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
           required: ['Name', 'Response'],
           properties: {
             Name: { type: 'string', pattern: '[a-zA-Z0-9]+' },
+            Description: { type: 'string' },
             Request: {
               // JSONSchema
               type: 'object',

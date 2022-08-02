@@ -12,6 +12,20 @@ export type GenerateAxiosClientOutput = {
   declaration: string;
 };
 
+const toJSDocLines = (docs: string): string =>
+  docs
+    .split('\n')
+    .map((line) => ` * ${line}`)
+    .join('\n');
+
+const PAGINATE_JSDOC = `
+/**
+ * Paginates exhaustively through the provided \`request\`, using the specified
+ * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
+ * page size for pagination.
+ */
+`.trim();
+
 export const generateAxiosClient = async ({
   spec,
   outputClass,
@@ -29,19 +43,27 @@ export declare class ${outputClass} {
   constructor(client: AxiosInstance);
 
   ${Object.entries(spec.Endpoints)
-    .map(([endpoint, { Name }]) => {
-      const [method] = endpoint.split(' ');
-      const paramsName = method === 'GET' ? 'params' : 'data';
-
+    .map(([endpoint, { Name, Description }]) => {
       return `
+        /**
+         ${toJSDocLines(
+           Description || `Executes the \`${endpoint}\` endpoint.`,
+         )}
+         *
+         * @param data The request data.
+         * @param config The Axios request overrides for the request.
+         *
+         * @returns An AxiosResponse object representing the response.
+         */
         ${Name}(
-          ${paramsName}: Endpoints['${endpoint}']['Request'] &
+          data: Endpoints['${endpoint}']['Request'] &
             Endpoints['${endpoint}']['PathParams'],
           config?: AxiosRequestConfig
         ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>>`;
     })
     .join('\n\n')}
 
+  ${PAGINATE_JSDOC}
   paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
     request: (
       data: T,
@@ -109,11 +131,6 @@ class ${outputClass} {
     })
     .join('\n\n')}
 
-  /**
-   * Paginates exhaustively through the provided \`request\`, using the specified
-   * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
-   * page size for pagination.
-   */
   async paginate(request, data, config) {
     const result = [];
 

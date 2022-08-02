@@ -3,6 +3,15 @@ import {
   GenerateAxiosClientInput,
 } from './generate-axios-client';
 import { format } from 'prettier';
+import { writeFileSync } from 'fs';
+
+const LONG_DESCRIPTION = `
+This is a long description about a field. It contains lots of very long text. Sometimes the text might be over the desired line length.
+
+It contains newlines.
+
+## It contains markdown.
+`.trim();
 
 describe('generate', () => {
   const generateAndFormat = (input: GenerateAxiosClientInput) =>
@@ -40,6 +49,7 @@ describe('generate', () => {
             },
             'PUT /posts/:id': {
               Name: 'putPost',
+              Description: LONG_DESCRIPTION,
               Request: {
                 type: 'object',
                 additionalProperties: false,
@@ -109,11 +119,6 @@ class Client {
     });
   }
 
-  /**
-   * Paginates exhaustively through the provided \`request\`, using the specified
-   * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
-   * page size for pagination.
-   */
   async paginate(request, data, config) {
     const result = [];
 
@@ -167,18 +172,43 @@ export type Endpoints = {
 export declare class Client {
   constructor(client: AxiosInstance);
 
+  /**
+   * Executes the \`GET /posts\` endpoint.
+   *
+   * @param data The request data.
+   * @param config The Axios request overrides for the request.
+   *
+   * @returns An AxiosResponse object representing the response.
+   */
   getPosts(
-    params: Endpoints["GET /posts"]["Request"] &
+    data: Endpoints["GET /posts"]["Request"] &
       Endpoints["GET /posts"]["PathParams"],
     config?: AxiosRequestConfig
   ): Promise<AxiosResponse<Endpoints["GET /posts"]["Response"]>>;
 
+  /**
+   * This is a long description about a field. It contains lots of very long text. Sometimes the text might be over the desired line length.
+   *
+   * It contains newlines.
+   *
+   * ## It contains markdown.
+   *
+   * @param data The request data.
+   * @param config The Axios request overrides for the request.
+   *
+   * @returns An AxiosResponse object representing the response.
+   */
   putPost(
     data: Endpoints["PUT /posts/:id"]["Request"] &
       Endpoints["PUT /posts/:id"]["PathParams"],
     config?: AxiosRequestConfig
   ): Promise<AxiosResponse<Endpoints["PUT /posts/:id"]["Response"]>>;
 
+  /**
+   * Paginates exhaustively through the provided \`request\`, using the specified
+   * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
+   * page size for pagination.
+   */
   paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
     request: (
       data: T,
@@ -200,6 +230,9 @@ export declare class Client {
       const result = await generateAndFormat(input);
       expect(result.javascript).toStrictEqual(expected.javascript);
       expect(result.declaration).toStrictEqual(expected.declaration);
+
+      writeFileSync(`${__dirname}/test-generated.js`, result.javascript);
+      writeFileSync(`${__dirname}/test-generated.d.ts`, result.declaration);
     });
   });
 });

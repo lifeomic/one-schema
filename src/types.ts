@@ -2,6 +2,7 @@ import type { JSONSchema4 } from 'json-schema';
 
 export type EndpointDefinition = {
   Name: string;
+  Description?: string;
   Request?: JSONSchema4;
   Response: JSONSchema4;
 };

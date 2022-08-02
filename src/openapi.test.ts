@@ -16,6 +16,7 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
   Endpoints: {
     'GET /posts': {
       Name: 'getPosts',
+      Description: 'This endpoint has a description',
       Request: {
         type: 'object',
         required: ['sort'],
@@ -133,7 +134,7 @@ describe('toOpenAPISpec', () => {
             ],
             responses: {
               '200': {
-                description: 'TODO',
+                description: 'This endpoint has a description',
                 content: {
                   'application/json': {
                     schema: {
@@ -170,7 +171,7 @@ describe('toOpenAPISpec', () => {
             },
             responses: {
               '200': {
-                description: 'TODO',
+                description: 'None',
                 content: {
                   'application/json': {
                     schema: {
@@ -204,7 +205,7 @@ describe('toOpenAPISpec', () => {
                     },
                   },
                 },
-                description: 'TODO',
+                description: 'None',
               },
             },
           },
@@ -222,7 +223,7 @@ describe('toOpenAPISpec', () => {
             ],
             responses: {
               '200': {
-                description: 'TODO',
+                description: 'None',
                 content: {
                   'application/json': {
                     schema: {
@@ -263,7 +264,7 @@ describe('toOpenAPISpec', () => {
             },
             responses: {
               '200': {
-                description: 'TODO',
+                description: 'None',
                 content: {
                   'application/json': {
                     schema: {

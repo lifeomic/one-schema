@@ -46,16 +46,17 @@ export const toOpenAPISpec = (
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   openAPIDocument.components!.schemas = Resources;
 
-  for (const [endpoint, { Name, Request, Response }] of Object.entries(
-    Endpoints,
-  )) {
+  for (const [
+    endpoint,
+    { Name, Description, Request, Response },
+  ] of Object.entries(Endpoints)) {
     const [method, path] = endpoint.split(' ');
 
     const operation: OpenAPIV3_1.OperationObject = {
       operationId: Name,
       responses: {
         '200': {
-          description: 'TODO',
+          description: Description || 'None',
           content: {
             'application/json': {
               // @ts-expect-error TS detects a mismatch between the JSONSchema types
