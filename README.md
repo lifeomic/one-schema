@@ -16,7 +16,7 @@ First, define an API schema file. Schemas look like this:
 # schema.yml
 Resources:
   Item:
-    type: 'object'
+    type: object
     properties:
       id:
         description: The item's unique identifier.
@@ -24,19 +24,26 @@ Resources:
       label:
         description: The item's label.
         type: string
+
 Endpoints:
   PUT /items/:id:
     Name: upsertItem
+    Description: |
+      Upserts the specified item.
+
+      This description can be long and multiline. It can even include **markdown**!
     Request:
       type: object
       properties:
         label: { type: string }
     Response:
       $ref: '#/definitions/Item'
+
   GET /items/:id:
     Name: getItemById
     Response:
       $ref: '#/definitions/Item'
+
   GET /items:
     Name: listItems
     Request:
@@ -56,6 +63,10 @@ Let's look at one endpoint from the schema above, and break down its parts:
 ```yaml
 PUT /items/:id:
   Name: upsertItem
+  Description: |
+    Upserts the specified item.
+
+    This description can be long and multiline. It can even include **markdown**!
   Request:
     type: object
     properties:
@@ -69,6 +80,9 @@ PUT /items/:id:
 - The `Name` entry is a human-readable name for the endpoint. Every endpoint must have a `Name`
   entry. This value is used for generating nice clients for the application. It should be alphanumeric
   and camelCased.
+
+- The `Description` entry is a long-form Markdown-compatible description of how the endpoint works.
+  This description will be generated into JSDoc in generated code.
 
 - The `Request` entry is a JSONSchema definition that describes a valid request object. `Request`
   schemas are optional for `GET` and `DELETE` endpoints.
