@@ -1,4 +1,4 @@
-import type { OpenAPIV3_1 } from 'openapi-types';
+import type { OpenAPIV3 } from 'openapi-types';
 import type { OneSchemaDefinition } from './types';
 import { deepCopy } from './generate-endpoints';
 import { validateSchema } from './meta-schema';
@@ -21,14 +21,14 @@ const getPathParameters = (koaPath: string) =>
 export const toOpenAPISpec = (
   schema: OneSchemaDefinition,
   config: {
-    info: OpenAPIV3_1.InfoObject;
+    info: OpenAPIV3.InfoObject;
   },
-): OpenAPIV3_1.Document => {
+): OpenAPIV3.Document => {
   validateSchema(schema);
 
   // 1. Declare the document. We'll build it as we go.
-  const openAPIDocument: OpenAPIV3_1.Document = {
-    openapi: '3.1.0',
+  const openAPIDocument: OpenAPIV3.Document = {
+    openapi: '3.0.0',
     info: config.info,
     components: {},
     paths: {},
@@ -52,7 +52,7 @@ export const toOpenAPISpec = (
   ] of Object.entries(Endpoints)) {
     const [method, path] = endpoint.split(' ');
 
-    const operation: OpenAPIV3_1.OperationObject = {
+    const operation: OpenAPIV3.OperationObject = {
       operationId: Name,
       responses: {
         '200': {
@@ -69,14 +69,14 @@ export const toOpenAPISpec = (
       },
     };
 
-    const parameters: OpenAPIV3_1.ParameterObject[] = getPathParameters(
-      path,
-    ).map((name) => ({
-      name,
-      in: 'path',
-      schema: { type: 'string' },
-      required: true,
-    }));
+    const parameters: OpenAPIV3.ParameterObject[] = getPathParameters(path).map(
+      (name) => ({
+        name,
+        in: 'path',
+        schema: { type: 'string' },
+        required: true,
+      }),
+    );
 
     if (Request) {
       if (['GET', 'DELETE'].includes(method)) {

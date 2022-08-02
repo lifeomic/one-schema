@@ -174,7 +174,7 @@ const program = yargs(process.argv.slice(2))
       );
 
       const openAPISpec = toOpenAPISpec(spec, {
-        info: { version: argv.apiTitle, title: argv.apiTitle },
+        info: { version: argv.apiVersion, title: argv.apiTitle },
       });
 
       const output =

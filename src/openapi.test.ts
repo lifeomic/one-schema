@@ -87,14 +87,14 @@ describe('toOpenAPISpec', () => {
 
     // Ensure result is a valid OpenAPI spec
     const { errors } = new OpenAPIValidator({
-      version: '3.1.0',
+      version: '3.0.0',
     }).validate(result);
 
     expect(errors).toHaveLength(0);
 
     // Assert on specific response.
     expect(result).toStrictEqual({
-      openapi: '3.1.0',
+      openapi: '3.0.0',
       info: { title: 'test title', version: '1.2.3' },
       components: {
         schemas: {
