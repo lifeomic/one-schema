@@ -2,5 +2,5 @@ node_modules
 coverage
 .vscode
 dist/
-src/test-generated.js
-src/test-generated.d.ts
+src/test-schema.json
+src/test-generated.*
