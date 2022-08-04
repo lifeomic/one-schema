@@ -117,6 +117,7 @@ describe('toOpenAPISpec', () => {
         '/posts': {
           get: {
             operationId: 'getPosts',
+            description: 'This endpoint has a description',
             parameters: [
               {
                 in: 'query',
@@ -134,7 +135,7 @@ describe('toOpenAPISpec', () => {
             ],
             responses: {
               '200': {
-                description: 'This endpoint has a description',
+                description: 'A successful response',
                 content: {
                   'application/json': {
                     schema: {
@@ -171,7 +172,7 @@ describe('toOpenAPISpec', () => {
             },
             responses: {
               '200': {
-                description: 'None',
+                description: 'A successful response',
                 content: {
                   'application/json': {
                     schema: {
@@ -205,7 +206,7 @@ describe('toOpenAPISpec', () => {
                     },
                   },
                 },
-                description: 'None',
+                description: 'A successful response',
               },
             },
           },
@@ -223,7 +224,7 @@ describe('toOpenAPISpec', () => {
             ],
             responses: {
               '200': {
-                description: 'None',
+                description: 'A successful response',
                 content: {
                   'application/json': {
                     schema: {
@@ -264,7 +265,7 @@ describe('toOpenAPISpec', () => {
             },
             responses: {
               '200': {
-                description: 'None',
+                description: 'A successful response',
                 content: {
                   'application/json': {
                     schema: {

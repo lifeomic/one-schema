@@ -54,9 +54,10 @@ export const toOpenAPISpec = (
 
     const operation: OpenAPIV3.OperationObject = {
       operationId: Name,
+      description: Description,
       responses: {
         '200': {
-          description: Description || 'None',
+          description: 'A successful response',
           content: {
             'application/json': {
               // @ts-expect-error TS detects a mismatch between the JSONSchema types
