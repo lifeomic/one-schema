@@ -2,6 +2,7 @@ import { execSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 import { tmpNameSync } from 'tmp';
 import { OneSchemaDefinition } from '../types';
+import * as yaml from 'js-yaml';
 
 const executeCLI = (command: string): string => {
   try {
@@ -114,6 +115,7 @@ describe('generate-open-api-spec', () => {
 
     const yamlContent = readFileSync(output, { encoding: 'utf8' });
 
+    // Assert the output looks right.
     expect(yamlContent.trim()).toStrictEqual(
       `
 openapi: 3.0.0
@@ -139,6 +141,13 @@ paths:
                 additionalProperties: false
                 type: object
 `.trim(),
+    );
+
+    // Assert the output deserializes correctly.
+    const openapi: any = yaml.load(yamlContent);
+
+    expect(openapi.paths['/something'].get.description).toStrictEqual(
+      description,
     );
   });
 });

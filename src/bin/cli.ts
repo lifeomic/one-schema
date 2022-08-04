@@ -182,9 +182,9 @@ const program = yargs(process.argv.slice(2))
           ? dump(openAPISpec, {
               /**
                * Without this, js-yaml will default to a line width of 80 and use
-               * "line folding". While this should not actually affect serialization
-               * or deserialization, it can result in ugly-looking output that contains
-               * newlines in unexpected places.
+               * the "folded" multiline style. While this should not actually affect
+               * serialization or deserialization, it can result in ugly-looking output
+               * that contains newlines in unexpected places.
                *
                * This option allows us to preserve the original developer's newlines.
                */
