@@ -1,6 +1,8 @@
 import { execSync } from 'child_process';
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { tmpNameSync } from 'tmp';
+import { OneSchemaDefinition } from '../types';
+import * as yaml from 'js-yaml';
 
 const executeCLI = (command: string): string => {
   try {
@@ -12,6 +14,15 @@ const executeCLI = (command: string): string => {
   } catch (err) {
     return err.stderr.toString();
   }
+};
+
+/**
+ * Writes the `schema`, and returns its filepath.
+ */
+const writeSchema = (schema: OneSchemaDefinition): string => {
+  const path = `${__dirname}/../test-schema.json`;
+  writeFileSync(path, JSON.stringify(schema, null, 2), { encoding: 'utf8' });
+  return path;
 };
 
 describe('schema validation snapshots', () => {
@@ -76,5 +87,67 @@ describe('input validation snapshots', () => {
       const result = executeCLI(input);
       expect(result.trim()).toMatchSnapshot();
     });
+  });
+});
+
+describe('generate-open-api-spec', () => {
+  it('does not create new newlines when serializing + deserializing to YAML', () => {
+    const description =
+      'This is a long description that might go over the js-yaml default line length.\nIt also contains newlines.\n\nLots of newlines!';
+
+    const path = writeSchema({
+      Endpoints: {
+        'GET /something': {
+          Name: 'getSomething',
+          Description: description,
+          Response: {
+            type: 'object',
+          },
+        },
+      },
+    });
+
+    const output = `${__dirname}/../test-generated.yaml`;
+
+    executeCLI(
+      `generate-open-api-spec --schema '${path}' --output '${output}' --apiTitle 'test title'`,
+    );
+
+    const yamlContent = readFileSync(output, { encoding: 'utf8' });
+
+    // Assert the output looks right.
+    expect(yamlContent.trim()).toStrictEqual(
+      `
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: test title
+components: {}
+paths:
+  /something:
+    get:
+      operationId: getSomething
+      description: |-
+        This is a long description that might go over the js-yaml default line length.
+        It also contains newlines.
+
+        Lots of newlines!
+      responses:
+        "200":
+          description: A successful response
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                type: object
+`.trim(),
+    );
+
+    // Assert the output deserializes correctly.
+    const openapi: any = yaml.load(yamlContent);
+
+    expect(openapi.paths['/something'].get.description).toStrictEqual(
+      description,
+    );
   });
 });
