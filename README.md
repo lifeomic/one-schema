@@ -142,12 +142,6 @@ const router = new Router();
 
 implementSchema(Schema, {
   on: router,
-  parse: (ctx, { schema, data }) => {
-    // validate that `data` matches `schema`, using whatever
-    // library you like, and return the parsed response.
-
-    return data;
-  },
   implementation: {
     'POST /items': (ctx) => {
       // `ctx.request.body` is well-typed and has been run-time validated.
