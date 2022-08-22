@@ -2,6 +2,7 @@ import { JSONSchema4 } from 'json-schema';
 import type { ExtendableContext, ParameterizedContext } from 'koa';
 import type Router from '@koa/router';
 import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
+import Ajv from 'ajv';
 
 /**
  * We use this type to very cleanly remove these fields from the Koa context, so
@@ -108,6 +109,8 @@ export type ImplementationConfig<
    * If the `data` does not conform to the schema, this function
    * should `throw`.
    *
+   * If not provided, a default parser will be used.
+   *
    * @param ctx The current context.
    * @param params.endpoint The endpoint being requested.
    * @param params.schema The request JSON Schema.
@@ -115,7 +118,7 @@ export type ImplementationConfig<
    *
    * @returns A validated payload.
    */
-  parse: <Endpoint extends keyof EndpointsOf<Schema>>(
+  parse?: <Endpoint extends keyof EndpointsOf<Schema>>(
     ctx: ParameterizedContext<
       StateOfRouter<RouterType>,
       ContextOfRouter<RouterType>
@@ -125,6 +128,29 @@ export type ImplementationConfig<
 
   /** A configuration for supporting introspection. */
   introspection: IntrospectionConfig | undefined;
+};
+
+const ajv = new Ajv();
+
+const defaultParse: ImplementationConfig<any, any>['parse'] = (
+  ctx,
+  { endpoint, data, schema },
+) => {
+  if (!ajv.validate(schema, data)) {
+    const method = (endpoint as string).split(' ')[0];
+    const dataVar = ['GET', 'DELETE'].includes(method)
+      ? 'query parameters'
+      : 'payload';
+
+    return ctx.throw(
+      400,
+      `The request did not conform to the required schema: ${ajv.errorsText(
+        undefined,
+        { dataVar },
+      )}`,
+    );
+  }
+  return data as any;
 };
 
 /**
@@ -172,17 +198,19 @@ export const implementSchema = <
       // 1. Validate the input data.
       const requestSchema = schema.Endpoints[endpoint].Request;
       if (requestSchema) {
+        const parser: typeof parse = parse ?? defaultParse;
+
         // 1a. For GET and DELETE, validate the query params.
         if (['GET', 'DELETE'].includes(method)) {
           // @ts-ignore
-          ctx.request.query = parse(ctx, {
+          ctx.request.query = parser(ctx, {
             endpoint,
             schema: { ...requestSchema, definitions: schema.Resources },
             data: ctx.request.query,
           });
         } else {
           // 1b. Otherwise, use the body.
-          ctx.request.body = parse(ctx, {
+          ctx.request.body = parser(ctx, {
             endpoint,
             schema: { ...requestSchema, definitions: schema.Resources },
             data: ctx.request.body,

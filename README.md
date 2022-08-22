@@ -142,12 +142,6 @@ const router = new Router();
 
 implementSchema(Schema, {
   on: router,
-  parse: (ctx, { schema, data }) => {
-    // validate that `data` matches `schema`, using whatever
-    // library you like, and return the parsed response.
-
-    return data;
-  },
   implementation: {
     'POST /items': (ctx) => {
       // `ctx.request.body` is well-typed and has been run-time validated.
@@ -174,6 +168,19 @@ const server = new Koa()
   .use(router.routes())
   .use(router.allowedMethods())
   .listen();
+```
+
+By default, `implementSchema` will perform input validation on all of your routes, using the defined `Request` schemas.
+To customize this input validation, specify a `parse` function:
+
+```typescript
+implementSchema(Schema, {
+  // ...
+  parse: (ctx, { endpoint, schema, data }) => {
+    // Validate `data` against the `schema`.
+    // If the data is valid, return it, otherwise throw.
+  },
+});
 ```
 
 ### Axios Client Generation

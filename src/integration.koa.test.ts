@@ -256,3 +256,82 @@ test('introspection', async () => {
     },
   );
 });
+
+test('default parsing for POST fails invalid data', async () => {
+  await executeTest(
+    {
+      parse: undefined,
+      implementation: {
+        'POST /posts': (ctx) => ctx.request.body,
+      },
+    },
+    async (client) => {
+      const result = await client.post('/posts', {});
+
+      expect(result).toMatchObject({
+        status: 400,
+        data: "The request did not conform to the required schema: payload must have required property 'id'",
+      });
+    },
+  );
+});
+
+test('default parsing for POST allows valid data', async () => {
+  await executeTest(
+    {
+      parse: undefined,
+      implementation: {
+        'POST /posts': (ctx) => ctx.request.body,
+      },
+    },
+    async (client) => {
+      const result = await client.post('/posts', {
+        id: 'some-id',
+        message: 'some-message',
+      });
+
+      expect(result).toMatchObject({
+        status: 200,
+      });
+    },
+  );
+});
+
+test('default parsing for GET fails invalid data', async () => {
+  await executeTest(
+    {
+      parse: undefined,
+      implementation: {
+        'GET /posts': (ctx) => ctx.request.body,
+      },
+    },
+    async (client) => {
+      const result = await client.get(
+        '/posts?input=something&input=something-else',
+      );
+
+      expect(result).toMatchObject({
+        status: 400,
+        data: 'The request did not conform to the required schema: query parameters/input must be string',
+      });
+    },
+  );
+});
+
+test('default parsing for GET allows valid data', async () => {
+  await executeTest(
+    {
+      parse: undefined,
+      implementation: {
+        'GET /posts': (ctx) => ctx.request.body,
+      },
+    },
+    async (client) => {
+      const result = await client.get('/posts?input=something');
+
+      expect(result).toMatchObject({
+        status: 200,
+      });
+    },
+  );
+});
