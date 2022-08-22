@@ -170,6 +170,19 @@ const server = new Koa()
   .listen();
 ```
 
+By default, `implementSchema` will perform input validation on all of your routes, using the defined `Request` schemas.
+To customize this input validation, specify a `parse` function:
+
+```typescript
+implementSchema(Schema, {
+  // ...
+  parse: (ctx, { endpoint, schema, data }) => {
+    // Validate `data` against the `schema`.
+    // If the data is valid, return it, otherwise throw.
+  },
+});
+```
+
 ### Axios Client Generation
 
 Projects that want to safely consume a service that uses `one-schema` can perform introspection using `fetch-remote-schema`.
