@@ -1,0 +1,80 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`introspection introspecting + generating a client 1`] = `
+"/* eslint-disable */
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from \\"axios\\";
+
+export type Endpoints = {
+  \\"POST /items\\": {
+    Request: {
+      message: string;
+    };
+    PathParams: {};
+    Response: {
+      id: string;
+      message: string;
+    };
+  };
+  \\"GET /items/:id\\": {
+    Request: {
+      filter: string;
+    };
+    PathParams: {
+      id: string;
+    };
+    Response: {
+      id: string;
+      message: string;
+    };
+  };
+};
+
+export declare class Client {
+  constructor(client: AxiosInstance);
+
+  /**
+   * Executes the \`POST /items\` endpoint.
+   *
+   * @param data The request data.
+   * @param config The Axios request overrides for the request.
+   *
+   * @returns An AxiosResponse object representing the response.
+   */
+  createItem(
+    data: Endpoints[\\"POST /items\\"][\\"Request\\"] &
+      Endpoints[\\"POST /items\\"][\\"PathParams\\"],
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<Endpoints[\\"POST /items\\"][\\"Response\\"]>>;
+
+  /**
+   * Executes the \`GET /items/:id\` endpoint.
+   *
+   * @param data The request data.
+   * @param config The Axios request overrides for the request.
+   *
+   * @returns An AxiosResponse object representing the response.
+   */
+  getItem(
+    data: Endpoints[\\"GET /items/:id\\"][\\"Request\\"] &
+      Endpoints[\\"GET /items/:id\\"][\\"PathParams\\"],
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<Endpoints[\\"GET /items/:id\\"][\\"Response\\"]>>;
+
+  /**
+   * Paginates exhaustively through the provided \`request\`, using the specified
+   * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
+   * page size for pagination.
+   */
+  paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
+    request: (
+      data: T,
+      config?: AxiosRequestConfig
+    ) => Promise<
+      AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
+    >,
+    data: T,
+    config?: AxiosRequestConfig
+  ): Promise<Item[]>;
+}
+"
+`;
