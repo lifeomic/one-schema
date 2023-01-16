@@ -57,7 +57,7 @@ export class OneSchemaRouter<
     return new OneSchemaRouter({}, config);
   }
 
-  route<
+  declare<
     Route extends RoughRoute,
     Name extends string,
     Endpoint extends RouterEndpointDefinition<Name>,

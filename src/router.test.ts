@@ -44,7 +44,7 @@ test('introspection', async () => {
       using: new Router(),
       introspection: { route: '/private/introspection', serviceVersion: '123' },
     })
-      .route({
+      .declare({
         name: 'getSomething',
         route: 'GET /something/:id',
         description: 'it gets something',
@@ -52,7 +52,7 @@ test('introspection', async () => {
         response: z.object({ message: z.string(), id: z.string() }),
       })
       .implement('GET /something/:id', () => ({ id: '', message: '' }))
-      .route({
+      .declare({
         name: 'createSomething',
         route: 'POST /something',
         description: 'it creates something',
@@ -124,7 +124,7 @@ describe('type inference', () => {
   test('type inference for implementation return type', () => {
     setup((router) =>
       router
-        .route({
+        .declare({
           name: 'getItem',
           route: 'GET /items/:id',
           request: z.object({ message: z.string() }),
@@ -145,7 +145,7 @@ describe('type inference', () => {
   test('type inference for POST body + params', () => {
     setup((router) =>
       router
-        .route({
+        .declare({
           name: 'createItem',
           route: 'POST /items/:id',
           request: z.object({ message: z.string() }),
@@ -170,7 +170,7 @@ describe('type inference', () => {
   test('type inference for GET body + params', () => {
     setup((router) =>
       router
-        .route({
+        .declare({
           name: 'get',
           route: 'GET /items/:id',
           request: z.object({ message: z.string() }),
@@ -198,7 +198,7 @@ describe('input validation', () => {
     test(`rejects requests that do not match the schema for ${method} requests`, async () => {
       const { client } = setup((router) =>
         router
-          .route({
+          .declare({
             name: 'createItem',
             route: `${method} /items`,
             request: z.object({ message: z.string() }),
@@ -224,7 +224,7 @@ describe('input validation', () => {
     test(`rejects requests that do not match the schema for ${method} requests`, async () => {
       const { client } = setup((router) =>
         router
-          .route({
+          .declare({
             name: 'getItem',
             route: `${method} /items`,
             request: z.object({ message: z.string() }),
@@ -249,7 +249,7 @@ describe('input validation', () => {
   test('error messages when there are multiple validation errors', async () => {
     const { client } = setup((router) =>
       router
-        .route({
+        .declare({
           name: 'createItem',
           route: 'POST /items',
           request: z.object({ message: z.string(), private: z.boolean() }),
@@ -276,7 +276,7 @@ describe('implementations', () => {
     test(`rejects requests that do not match the schema for ${method} requests`, async () => {
       const { client } = setup((router) =>
         router
-          .route({
+          .declare({
             name: 'createItem',
             route: `${method} /items`,
             request: z.object({ message: z.string() }),
@@ -304,7 +304,7 @@ describe('implementations', () => {
     test(`rejects requests that do not match the schema for ${method} requests`, async () => {
       const { client } = setup((router) =>
         router
-          .route({
+          .declare({
             name: 'createItem',
             route: `${method} /items`,
             request: z.object({ message: z.string() }),
@@ -339,7 +339,7 @@ describe('introspection', () => {
           serviceVersion: '123',
         },
       })
-        .route({
+        .declare({
           name: 'createItem',
           route: 'POST /items',
           request: z.object({ message: z.string() }),
@@ -349,7 +349,7 @@ describe('introspection', () => {
           id: 'something',
           message: ctx.request.body.message + '-response',
         }))
-        .route({
+        .declare({
           route: 'GET /items/:id',
           name: 'getItem',
           request: z.object({
