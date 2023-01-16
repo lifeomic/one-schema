@@ -18,6 +18,17 @@ const ONE_SCHEMA_META_SCHEMA: JSONSchema4 = {
   additionalProperties: false,
   required: ['Endpoints'],
   properties: {
+    Assumptions: {
+      type: 'object',
+      properties: {
+        noAdditionalPropertiesOnObjects: {
+          type: 'boolean',
+        },
+        objectPropertiesRequiredByDefault: {
+          type: 'boolean',
+        },
+      },
+    },
     Resources: {
       type: 'object',
       patternProperties: {
@@ -151,7 +162,7 @@ export const DEFAULT_ASSUMPTIONS: SchemaAssumptions = {
 
 export const withAssumptions = (
   spec: OneSchemaDefinition,
-  overrides: SchemaAssumptions = DEFAULT_ASSUMPTIONS,
+  overrides: SchemaAssumptions,
 ): OneSchemaDefinition => {
   // Deep copy, then apply assumptions.
   let copy = deepCopy(spec);
@@ -188,13 +199,8 @@ export const withAssumptions = (
   return copy;
 };
 
-export const loadSchemaFromFile = (
-  filename: string,
-  assumptions: SchemaAssumptions = DEFAULT_ASSUMPTIONS,
-): OneSchemaDefinition => {
+export const loadSchemaFromFile = (filename: string): OneSchemaDefinition => {
   let spec: any = load(readFileSync(filename, { encoding: 'utf-8' }));
-
-  let applyAssumptions = true;
 
   // Check if this in an introspection result. If so, grab the schema,
   // and skip applying assumptions. Schemas served directly from services
@@ -202,15 +208,13 @@ export const loadSchemaFromFile = (
   const isIntrospectionResult = typeof spec === 'object' && 'schema' in spec;
   if (isIntrospectionResult) {
     spec = spec.schema;
-    applyAssumptions = false;
-    console.log(
-      'Detected one-schema introspection response. Skipping applying schema assumptions.',
-    );
   }
 
   validateSchema(spec as OneSchemaDefinition);
 
-  return applyAssumptions
-    ? withAssumptions(spec as OneSchemaDefinition, assumptions)
-    : spec;
+  return withAssumptions(spec as OneSchemaDefinition, {
+    noAdditionalPropertiesOnObjects: false,
+    objectPropertiesRequiredByDefault: false,
+    ...spec.Assumptions,
+  });
 };

@@ -7,7 +7,7 @@ import { dump } from 'js-yaml';
 
 import { generateAxiosClient } from '../generate-axios-client';
 import { generateAPITypes } from '../generate-api-types';
-import { loadSchemaFromFile, SchemaAssumptions } from '../meta-schema';
+import { loadSchemaFromFile } from '../meta-schema';
 import { toOpenAPISpec } from '../openapi';
 import { fetchRemoteSchema } from '../fetch-remote-schema';
 
@@ -37,49 +37,6 @@ const writeGeneratedFile = (
   );
 };
 
-const VALID_ASSUMPTION_KEYS: (keyof SchemaAssumptions)[] = [
-  'noAdditionalPropertiesOnObjects',
-  'objectPropertiesRequiredByDefault',
-];
-
-const parseAssumptions = (input: string): SchemaAssumptions => {
-  const containsOnlyValidAssumptionKeys = (
-    arr: string[],
-  ): arr is (keyof SchemaAssumptions)[] =>
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    arr.every((value) => VALID_ASSUMPTION_KEYS.includes(value as any));
-
-  if (input === 'all') {
-    return {
-      noAdditionalPropertiesOnObjects: true,
-      objectPropertiesRequiredByDefault: true,
-    };
-  }
-
-  if (input === 'none') {
-    return {
-      noAdditionalPropertiesOnObjects: false,
-      objectPropertiesRequiredByDefault: false,
-    };
-  }
-
-  const assumptions = input.split(',');
-
-  if (!containsOnlyValidAssumptionKeys(assumptions)) {
-    throw new Error(
-      "Detected an invalid assumptions input. Must be either 'all', 'none', or a comma-separated list containing one or more of: " +
-        VALID_ASSUMPTION_KEYS.join(', '),
-    );
-  }
-
-  return assumptions.reduce((accum, next) => ({ ...accum, [next]: true }), {
-    requestsAreObjects: false,
-    responsesAreObjects: false,
-    noAdditionalPropertiesOnObjects: false,
-    objectPropertiesRequiredByDefault: false,
-  });
-};
-
 const getCommonOptions = (argv: yargs.Argv) =>
   argv
     .option('schema', {
@@ -96,13 +53,6 @@ const getCommonOptions = (argv: yargs.Argv) =>
       type: 'boolean',
       description: 'Whether to format the output using prettier.',
       default: true,
-    })
-    .option('assumptions', {
-      type: 'string',
-      description:
-        "Which JSONSchema assumptions to apply. Must be either 'all', 'none', or a comma-separated list containing one or more of: " +
-        VALID_ASSUMPTION_KEYS.join(', '),
-      default: 'all',
     });
 
 const program = yargs(process.argv.slice(2))
@@ -116,10 +66,7 @@ const program = yargs(process.argv.slice(2))
         demandOption: true,
       }),
     async (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
+      const spec = loadSchemaFromFile(argv.schema);
       const output = await generateAxiosClient({
         spec,
         outputClass: argv.name,
@@ -142,10 +89,7 @@ const program = yargs(process.argv.slice(2))
     'Generates API types using the specified schema and options.',
     getCommonOptions,
     async (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
+      const spec = loadSchemaFromFile(argv.schema);
 
       const output = await generateAPITypes({ spec });
 
@@ -168,10 +112,7 @@ const program = yargs(process.argv.slice(2))
           demandOption: true,
         }),
     (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
+      const spec = loadSchemaFromFile(argv.schema);
 
       const openAPISpec = toOpenAPISpec(spec, {
         info: { version: argv.apiVersion, title: argv.apiTitle },
