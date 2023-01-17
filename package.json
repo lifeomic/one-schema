@@ -31,7 +31,6 @@
     "@koa/router": "^12.0.0",
     "@lifeomic/eslint-config-standards": "^2.1.1",
     "@lifeomic/typescript-config": "^1.0.3",
-    "@types/axios": "^0.14.0",
     "@types/jest": "^27.5.1",
     "@types/js-yaml": "^4.0.5",
     "@types/koa": "^2.13.4",
