@@ -391,3 +391,26 @@ describe('introspection', () => {
     expect(formattedDeclaration).toMatchSnapshot();
   });
 });
+
+test('declaring multiple routes with the same name results in an error', () => {
+  expect(() => {
+    OneSchemaRouter.create({
+      using: new Router(),
+      introspection: undefined,
+    })
+      .declare({
+        route: 'POST /items',
+        name: 'createSomething',
+        request: z.object({}),
+        response: z.object({}),
+      })
+      .declare({
+        route: 'PUT /items',
+        name: 'createSomething',
+        request: z.object({}),
+        response: z.object({}),
+      });
+  }).toThrowError(
+    'Multiple endpoints were declared with the same name "createSomething". Each endpoint must have a unique name.',
+  );
+});
