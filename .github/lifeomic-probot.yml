@@ -1,5 +1,5 @@
 enforceSemanticCommits: true
 reportWorkflowFailures:
   Release:
-    # This is #preventia-dev
-    slackChannel: C03AS9T658R
+    # This is #open-source
+    slackChannel: C04928K3H5Z
