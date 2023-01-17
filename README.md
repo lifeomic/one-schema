@@ -1,8 +1,6 @@
-This package generates helpful client-side and server-side TypeScript code using simple schemas.
+Build end-to-end typesafe REST APIs using TypeScript.
 
-The package also supports generating [OpenAPI](https://www.openapis.org/) schemas using the simple schema format.
-
-## Installation
+## Getting Started
 
 ```
 yarn add @lifeomic/one-schema
@@ -10,184 +8,75 @@ yarn add @lifeomic/one-schema
 
 ## Usage
 
-First, define an API schema file. Schemas look like this:
+At a high level, `one-schema` provides end-to-end type safety via the following simple workflow.
 
-```yml
-# schema.yml
-Resources:
-  Item:
-    type: object
-    properties:
-      id:
-        description: The item's unique identifier.
-        type: string
-      label:
-        description: The item's label.
-        type: string
+- In your service repo, use `OneSchemaRouter` to declare your routes.
+- Deploy new service code.
+- In your client repo, generate a type-safe client by introspecting the deployed schema.
 
-Endpoints:
-  PUT /items/:id:
-    Name: upsertItem
-    Description: |
-      Upserts the specified item.
+**Note**: for documentation on the legacy flow of defining schemas in a YAML file, see [the legacy docs](./docs/yaml-flow.md).
 
-      This description can be long and multiline. It can even include **markdown**!
-    Request:
-      type: object
-      properties:
-        label: { type: string }
-    Response:
-      $ref: '#/definitions/Item'
+### Declaring API Routes
 
-  GET /items/:id:
-    Name: getItemById
-    Response:
-      $ref: '#/definitions/Item'
-
-  GET /items:
-    Name: listItems
-    Request:
-      type: object
-      properties:
-        filter: { type: string }
-    Response:
-      type: array
-      items:
-        $ref: '#/definitions/Item'
-```
-
-### Defining Endpoints
-
-Let's look at one endpoint from the schema above, and break down its parts:
-
-```yaml
-PUT /items/:id:
-  Name: upsertItem
-  Description: |
-    Upserts the specified item.
-
-    This description can be long and multiline. It can even include **markdown**!
-  Request:
-    type: object
-    properties:
-      label: { type: string }
-  Response:
-    $ref: '#/definitions/Item'
-```
-
-- The `PUT /items/:id` key uniquely identifies this endpoint using Koa-style route syntax.
-
-- The `Name` entry is a human-readable name for the endpoint. Every endpoint must have a `Name`
-  entry. This value is used for generating nice clients for the application. It should be alphanumeric
-  and camelCased.
-
-- The `Description` entry is a long-form Markdown-compatible description of how the endpoint works.
-  This description will be generated into JSDoc in generated code.
-
-- The `Request` entry is a JSONSchema definition that describes a valid request object. `Request`
-  schemas are optional for `GET` and `DELETE` endpoints.
-
-- The `Response` entry is a JSONSchema definition that describes the response that this endpoint
-  returns to clients.
-
-#### Query Parameters
-
-Let's look at another example from the schema above:
-
-```yaml
-GET /items:
-  Name: listItems
-  Request:
-    type: object
-    properties:
-      filter: { type: string }
-  Response:
-    type: array
-    items:
-      $ref: '#/definitions/Item'
-```
-
-Defining a `Request` schema for a `GET` or `DELETE` request will cause that schema to be applied
-against the request's _query parameters_.
-
-The schema will be checked against Koa's runtime representation of the query parameters. So, these
-assumptions should be kept in mind:
-
-- The `Request` schema _must_ be an `object` type JSON schema.
-- All of the `properties` entries in the schema should validate against `string`-like types. Koa does
-  not support parsing query parameters as `number` values, for example.
-
-### API Type Generation
-
-Use the `generate-api-types` command to generate helpful types to use for server-side input validation.
-
-```
-one-schema generate-api-types \
-  --schema schema.yml \
-  --output generated-api.ts
-```
-
-If you're building a Koa app, you can use these generated types with the `implementSchema` function to provide a type-safe interface for implementing your API specification:
+First, declare + implement your API routes using `OneSchemaRouter`. Use [`zod`](https://github.com/colinhacks/zod) to define your request + response schemas.
 
 ```typescript
-// app.ts
-import Koa from 'koa';
 import Router from '@koa/router';
+import { OneSchemaRouter } from '@lifeomic/one-schema';
+import { z } from 'zod';
 
-import { implementSchema } from '@lifeomic/one-schema';
-
-import { Schema } from './generated-api';
-
-const router = new Router();
-
-implementSchema(Schema, {
-  on: router,
-  implementation: {
-    'POST /items': (ctx) => {
-      // `ctx.request.body` is well-typed and has been run-time validated.
-      console.log(ctx.request.body.label);
-
-      // TypeScript enforces that this matches the `Response` schema.
-      return { id: '123', label: 'test label' };
-    },
-    'GET /items': (ctx) => {
-      // `ctx.request.query` is well-typed and has been run-time validated
-      console.log(ctx.request.query.filter);
-
-      // TypeScript enforces that this matches the `Response` schema.
-      return [{ id: '123', label: 'test label' }];
-    },
-  },
+const router = OneSchemaRouter.create({
+  using: new Router(),
   introspection: {
     route: '/private/introspection',
-    serviceVersion: process.env.LIFEOMIC_BUILD_ID!,
+    serviceVersion: process.env.LIFEOMIC_SERVICE_VERSION,
   },
-});
+})
+  .declare({
+    route: 'POST /items',
+    name: 'createItem',
+    request: z.object({ message: z.string() }),
+    response: z.object({ id: z.string(), message: z.string() }),
+  })
+  .declare({
+    route: 'GET /items/:id',
+    name: 'getItemById',
+    request: z.object({ filter: z.string() }),
+    response: z.object({ id: z.string(), message: z.string() }),
+  });
 
-const server = new Koa()
-  .use(router.routes())
-  .use(router.allowedMethods())
-  .listen();
+// Be sure to expose your router's routes on a Koa app.
+import Koa from 'koa';
+
+const app = new Koa().use(router.middleware());
+
+app.listen();
 ```
 
-By default, `implementSchema` will perform input validation on all of your routes, using the defined `Request` schemas.
-To customize this input validation, specify a `parse` function:
+Once you have routes declared, add implementations for each route. Enjoy perfect type inference and auto-complete for path parameters, query parameters, and the request body.
 
 ```typescript
-implementSchema(Schema, {
-  // ...
-  parse: (ctx, { endpoint, schema, data }) => {
-    // Validate `data` against the `schema`.
-    // If the data is valid, return it, otherwise throw.
-  },
+router
+  .implement('POST /items', async (ctx) => {
+    ctx.request.body; // { message: string }
+    return { id: 'some-id', message: ctx.request.body.message };
+  })
+  .implement('GET /items/:id', async (ctx) => {
+    ctx.request.query; // { filter: string }
+    ctx.params; // { id: string }
+    return { id: 'some-id', message:'some-id' };
+  })
 });
 ```
 
-### Axios Client Generation
+### Generating Type-Safe Clients
 
-Projects that want to safely consume a service that uses `one-schema` can perform introspection using `fetch-remote-schema`.
+To generate a type-safe client for this new API, we need to:
 
-```
+1. Introspect the deployed schema using the `one-schema` CLI. Commit this file.
+2. Generate a client using the introspected schema + the `one-schema` CLI.
+
+```sh
 one-schema fetch-remote-schema \
   --from lambda://my-service:deployed/private/introspection \
   --output src/schemas/my-service.json
@@ -195,19 +84,14 @@ one-schema fetch-remote-schema \
 
 Then, use the `generate-axios-client` command to generate a nicely typed Axios-based client from the schema.
 
-```
+```sh
 one-schema generate-axios-client \
   --schema src/schemas/my-service.json \
   --output generated-client.ts \
   --name MyService
 ```
 
-This command will output two files:
-
-- `generated-client.js`
-- `generated-client.d.ts`
-
-How to use the generated client:
+Now, use the generated client:
 
 ```typescript
 import axios from 'axios';
@@ -216,68 +100,58 @@ import { MyService } from './generated-client';
 // Provide any AxiosInstance, customized to your needs.
 const client = new MyService(axios.create({ baseURL: 'https://my.api.com/' }));
 
-const response = await client.upsertItem({
-  label: 'some-label',
+// The client has named methods for interacting with each API endpoint.
+
+const response = await client.createItem({
+  message: 'some-message',
 });
 
 console.log(response.data);
 // {
 //   id: 'some-id',
-//   label: 'some-label'
+//   message: 'some-message'
 // }
 
-const response = await client.listItems({
+const response = await client.getItemById({
+  id: 'some-id',
   filter: 'some-filter',
 });
 
 console.log(response.data);
-// [
-//   {
-//     id: 'some-id',
-//     label: 'some-label'
-//   },
-//   ...
-// ]
+// {
+//   id: 'some-id',
+//   message: 'some-message'
+// }
 ```
 
 #### Pagination
 
 The generated client provides a built-in helper for reading from paginated LifeOmic APIs:
 
-```yaml
-# Example endpoint
-Name: listPaginatedItems
-Request:
-  type: object
-  properties:
-    filter:
-      type: string
-      optional: true
-    nextPageToken:
-      type: string
-      optional: true
-    pageSize:
-      type: string
-      optional: true
-Response:
-  type: object
-  properties:
-    items:
-      $ref: '#/definitions/Item'
-    links:
-      type: object
-      properties:
-        self:
-          type: string
-        next:
-          type: string
-          optional: true
+```typescript
+// example endpoint
+router.declare({
+  route: 'GET /items',
+  name: 'listItems',
+  request: z.object({
+    nextPageToken: z.string(),
+    pageSize: z.string(),
+  }),
+  response: z.object({
+    items: z.array(
+      z.object({ id: z.string().optional(), message: z.string().optional() }),
+    ),
+    links: z.object({
+      self: z.string(),
+      next: z.string().optional(),
+    }),
+  }),
+});
 ```
 
 ```typescript
-// Usage
+// Automatically paginate using the client.
 const result = await client.paginate(client.listPaginatedItems, {
-  filter: '...',
   pageSize: '10',
 });
 
@@ -389,60 +263,10 @@ The output (in `generated-openapi-schema.json`):
 }
 ```
 
-### Schema Assumptions
+## CLI Reference
 
-`one-schema` provides a set of JSONSchema assumptions to help simplify Request/Response JSONSchema entries in commonly desired ways.
+TODO
 
-These assumptions are described by the `SchemaAssumptions` type in [`src/meta-schema.ts`](src/meta-schema.ts) and can be individually or wholly disabled in the Node API and at the command line via the `--asssumptions` flag.
+## API Reference
 
-By default, all assumptions are applied.
-
-#### noAdditionalPropertiesOnObjects
-
-Enabling this assumption will automatically add `additionalProperties: false` to all `object` JSONSchemas. Example:
-
-```yaml
-PUT /items/:id:
-  Request:
-    type: object
-    properties:
-      label:
-        type: string
-
-# Automatically interpreted as:
-PUT /items/:id:
-  Request:
-    type: object
-    additionalProperties: false
-    properties:
-      label:
-        type: string
-```
-
-#### objectPropertiesRequiredByDefault
-
-Enabling this assumption will automatically add mark every object property as "required", unless that property's schema has `optional: true` defined. Example:
-
-```yaml
-PUT /items/:id:
-  Request:
-    type: object
-    properties:
-      label:
-        type: string
-      title:
-        type: string
-        optional: true
-
-# Automatically interpreted as:
-PUT /items/:id:
-  Request:
-    type: object
-    required:
-      - label
-    properties:
-      label:
-        type: string
-      title:
-        type: string
-```
+TODO
