@@ -64,6 +64,16 @@ export class OneSchemaRouter<
   >(
     endpoint: Endpoint & { route: Route },
   ): OneSchemaRouter<Schema & { [route in Route]: Endpoint }, R> {
+    const currentNames = Object.entries(this.schema).map(
+      ([, endpoint]) => endpoint.name,
+    );
+
+    if (currentNames.includes(endpoint.name)) {
+      throw new Error(
+        `Multiple endpoints were declared with the same name "${endpoint.name}". Each endpoint must have a unique name.`,
+      );
+    }
+
     // @ts-expect-error
     this.schema[endpoint.route] = endpoint;
 
@@ -114,6 +124,8 @@ const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
     oneSchema.Endpoints[endpoint] = {
       Name: definition.name,
       Description: definition.description,
+      // The JSONSchema types are very slightly different between packages. We just
+      // trust that the interop will work fine, and use "as any" here.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       Request: zodToJsonSchema(definition.request) as any,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
