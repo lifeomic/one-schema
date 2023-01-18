@@ -127,9 +127,13 @@ const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
       // The JSONSchema types are very slightly different between packages. We just
       // trust that the interop will work fine, and use "as any" here.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      Request: zodToJsonSchema(definition.request) as any,
+      Request: zodToJsonSchema(definition.request, {
+        $refStrategy: 'none',
+      }) as any,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      Response: zodToJsonSchema(definition.response) as any,
+      Response: zodToJsonSchema(definition.response, {
+        $refStrategy: 'none',
+      }) as any,
     };
   }
 
