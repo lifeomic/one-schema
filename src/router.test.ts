@@ -390,6 +390,76 @@ describe('introspection', () => {
 
     expect(formattedDeclaration).toMatchSnapshot();
   });
+
+  test('when using the same schema reference multiple times, it is always resolved inline', async () => {
+    const reusedSchema = z.object({ id: z.string() });
+
+    const router = OneSchemaRouter.create({
+      using: new Router(),
+      introspection: {
+        route: '/private/introspection',
+        serviceVersion: '123',
+      },
+    }).declare({
+      route: 'POST /items',
+      name: 'createItem',
+      request: z.object({}),
+      response: z.object({
+        resProp1: reusedSchema,
+        resProp2: reusedSchema,
+      }),
+    });
+
+    const { client } = serve(router);
+
+    const introspectionResult = await client.get('/private/introspection');
+
+    console.log(JSON.stringify(introspectionResult.data, null, 2));
+
+    expect(introspectionResult.data.schema).toStrictEqual({
+      Endpoints: {
+        'POST /items': {
+          Name: 'createItem',
+          Request: {
+            type: 'object',
+            properties: {},
+            additionalProperties: false,
+            $schema: 'http://json-schema.org/draft-07/schema#',
+          },
+          Response: {
+            type: 'object',
+            properties: {
+              // resProp1 and resProp2 should be inlined, even though they have identical
+              // schemas defined using the same reference.
+              resProp1: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                  },
+                },
+                required: ['id'],
+                additionalProperties: false,
+              },
+              resProp2: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                  },
+                },
+                required: ['id'],
+                additionalProperties: false,
+              },
+            },
+            required: ['resProp1', 'resProp2'],
+            additionalProperties: false,
+            $schema: 'http://json-schema.org/draft-07/schema#',
+          },
+        },
+      },
+    });
+  });
 });
 
 test('declaring multiple routes with the same name results in an error', () => {
