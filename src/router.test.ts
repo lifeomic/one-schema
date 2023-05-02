@@ -120,6 +120,63 @@ test('introspection', async () => {
   });
 });
 
+test('introspection with custom router', async () => {
+  const { client } = setup(() =>
+    OneSchemaRouter.create({
+      using: new Router(),
+      introspection: {
+        route: '/private/introspection',
+        serviceVersion: '123',
+        router: new Router({ prefix: '/custom' }),
+      },
+    })
+      .declare({
+        name: 'getSomething',
+        route: 'GET /something/:id',
+        description: 'it gets something',
+        request: z.object({ filter: z.string() }),
+        response: z.object({ message: z.string(), id: z.string() }),
+      })
+      .implement('GET /something/:id', () => ({ id: '', message: '' })),
+  );
+
+  const wrongIntroRouter = await client.get('/private/introspection');
+  expect(wrongIntroRouter.status).toStrictEqual(404);
+
+  const result = await client.get('/custom/private/introspection');
+
+  expect(result.data).toStrictEqual({
+    serviceVersion: '123',
+    schema: {
+      Endpoints: {
+        'GET /something/:id': {
+          Description: 'it gets something',
+          Name: 'getSomething',
+          Request: {
+            $schema: 'http://json-schema.org/draft-07/schema#',
+            additionalProperties: false,
+            properties: {
+              filter: { type: 'string' },
+            },
+            required: ['filter'],
+            type: 'object',
+          },
+          Response: {
+            $schema: 'http://json-schema.org/draft-07/schema#',
+            additionalProperties: false,
+            properties: {
+              id: { type: 'string' },
+              message: { type: 'string' },
+            },
+            required: ['message', 'id'],
+            type: 'object',
+          },
+        },
+      },
+    },
+  });
+});
+
 describe('type inference', () => {
   test('type inference for implementation return type', () => {
     setup((router) =>
@@ -311,7 +368,7 @@ describe('implementations', () => {
             response: z.object({ message: z.string() }),
           })
           .implement(`${method} /items`, (ctx) => ({
-            message: ctx.request.query.message + '-response',
+            message: (ctx.request.query.message as string) + '-response',
           })),
       );
 

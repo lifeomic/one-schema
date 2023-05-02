@@ -34,6 +34,10 @@ export type IntrospectionConfig = {
    * The current version of the service, served as part of introspection.
    */
   serviceVersion: string;
+  /**
+   * An optional alternative router to use for the introspection route.
+   */
+  router?: Router<any, any>;
 };
 
 /**
@@ -123,7 +127,8 @@ export const implementSchema = <
   }: ImplementationConfig<Schema, RouterType>,
 ): void => {
   if (introspection) {
-    router.get(introspection.route, (ctx, next) => {
+    const introRouter = introspection.router || router;
+    introRouter.get(introspection.route, (ctx, next) => {
       const response: IntrospectionResponse = {
         schema,
         serviceVersion: introspection.serviceVersion,

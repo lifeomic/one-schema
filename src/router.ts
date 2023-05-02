@@ -34,11 +34,15 @@ export class OneSchemaRouter<
 
   private constructor(
     private schema: Schema,
-    { introspection, using: router }: OneSchemaRouterConfig<R>,
+    private config: OneSchemaRouterConfig<R>,
   ) {
+    const { introspection, using: router } = config;
     this.router = router;
+
     if (introspection) {
-      router.get(introspection.route, (ctx, next) => {
+      const introRouter = introspection.router || router;
+
+      introRouter.get(introspection.route, (ctx, next) => {
         const response: IntrospectionResponse = {
           serviceVersion: introspection.serviceVersion,
           schema: convertRouterSchemaToJSONSchemaStyle(this.schema),
@@ -111,7 +115,15 @@ export class OneSchemaRouter<
   }
 
   middleware(): Router.Middleware {
-    return compose([this.router.routes(), this.router.allowedMethods()]);
+    const middlewares = [this.router.routes(), this.router.allowedMethods()];
+
+    if (this.config.introspection?.router) {
+      middlewares.push(
+        this.config.introspection.router.routes(),
+        this.config.introspection.router.allowedMethods(),
+      );
+    }
+    return compose(middlewares);
   }
 }
 
