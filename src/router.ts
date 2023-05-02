@@ -21,24 +21,20 @@ type ZodSchema = {
   [route: string]: RouterEndpointDefinition<string>;
 };
 
-export type OneSchemaRouterConfig<
-  R extends Router<any, any>,
-  IR extends Router<any, any> = R,
-> = {
+export type OneSchemaRouterConfig<R extends Router<any, any>> = {
   using: R;
-  introspection: IntrospectionConfig<IR> | undefined;
+  introspection: IntrospectionConfig | undefined;
 };
 
 export class OneSchemaRouter<
   Schema extends ZodSchema,
   R extends Router<any, any>,
-  IR extends Router<any, any> = R,
 > {
   private router: R;
 
   private constructor(
     private schema: Schema,
-    public config: OneSchemaRouterConfig<R, IR>,
+    public config: OneSchemaRouterConfig<R>,
   ) {
     const { introspection, using: router } = config;
     this.router = router;
@@ -59,9 +55,9 @@ export class OneSchemaRouter<
     }
   }
 
-  static create<R extends Router<any, any>, IR extends Router<any, any> = R>(
-    config: OneSchemaRouterConfig<R, IR>,
-  ): OneSchemaRouter<{}, R, IR> {
+  static create<R extends Router<any, any>>(
+    config: OneSchemaRouterConfig<R>,
+  ): OneSchemaRouter<{}, R> {
     return new OneSchemaRouter({}, config);
   }
 

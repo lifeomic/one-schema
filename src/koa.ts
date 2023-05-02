@@ -22,7 +22,7 @@ export type ImplementationOf<
   >;
 };
 
-export type IntrospectionConfig<R extends Router<any, any>> = {
+export type IntrospectionConfig = {
   /**
    * A route at which to serve the introspection request on the implementing
    * Router object.
@@ -37,7 +37,7 @@ export type IntrospectionConfig<R extends Router<any, any>> = {
   /**
    * An optional alernative router to use for the introspection route.
    */
-  router?: R;
+  router?: Router<any, any>;
 };
 
 /**
@@ -46,7 +46,6 @@ export type IntrospectionConfig<R extends Router<any, any>> = {
 export type ImplementationConfig<
   Schema extends OneSchema<any>,
   RouterType extends Router<any, any>,
-  IntrospectionRouterType extends Router<any, any> = RouterType,
 > = {
   /**
    * The implementation of the API.
@@ -83,7 +82,7 @@ export type ImplementationConfig<
   ) => Schema['Endpoints'][Endpoint]['Request'];
 
   /** A configuration for supporting introspection. */
-  introspection: IntrospectionConfig<IntrospectionRouterType> | undefined;
+  introspection: IntrospectionConfig | undefined;
 };
 
 const ajv = new Ajv();

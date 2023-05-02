@@ -14,7 +14,7 @@ afterEach(() => {
   server?.close();
 });
 
-const setup = <T extends OneSchemaRouter<any, any, any>>(
+const setup = <T extends OneSchemaRouter<any, any>>(
   expose: (router: OneSchemaRouter<{}, Router>) => T,
 ): { client: AxiosInstance } => {
   const router = expose(
