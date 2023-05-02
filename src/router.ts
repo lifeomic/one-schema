@@ -34,7 +34,7 @@ export class OneSchemaRouter<
 
   private constructor(
     private schema: Schema,
-    public config: OneSchemaRouterConfig<R>,
+    private config: OneSchemaRouterConfig<R>,
   ) {
     const { introspection, using: router } = config;
     this.router = router;
@@ -115,7 +115,15 @@ export class OneSchemaRouter<
   }
 
   middleware(): Router.Middleware {
-    return compose([this.router.routes(), this.router.allowedMethods()]);
+    const middlewares = [this.router.routes(), this.router.allowedMethods()];
+
+    if (this.config.introspection?.router) {
+      middlewares.push(
+        this.config.introspection.router.routes(),
+        this.config.introspection.router.allowedMethods(),
+      );
+    }
+    return compose(middlewares);
   }
 }
 

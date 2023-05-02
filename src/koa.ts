@@ -35,7 +35,7 @@ export type IntrospectionConfig = {
    */
   serviceVersion: string;
   /**
-   * An optional alernative router to use for the introspection route.
+   * An optional alternative router to use for the introspection route.
    */
   router?: Router<any, any>;
 };

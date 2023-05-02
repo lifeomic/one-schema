@@ -26,13 +26,7 @@ const setup = <T extends OneSchemaRouter<any, any>>(
 const serve = (
   router: OneSchemaRouter<{}, Router>,
 ): { client: AxiosInstance } => {
-  const koa = new Koa().use(bodyparser()).use(router.middleware());
-
-  if (router.config.introspection?.router) {
-    koa.use(router.config.introspection.router.middleware());
-  }
-
-  server = koa.listen();
+  server = new Koa().use(bodyparser()).use(router.middleware()).listen();
 
   const { port } = server.address() as any;
 
