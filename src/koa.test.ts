@@ -118,7 +118,7 @@ test('router typing is inferred correctly', () => {
     parse: () => null as any,
     on: router,
     implementation: {
-      'GET /dummy-route': (ctx) => {
+      'GET /dummy-route': (ctx: any) => {
         // assert state is extended correctly
         ctx.state.dummyStateProperty;
 
