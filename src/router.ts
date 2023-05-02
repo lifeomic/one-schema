@@ -21,24 +21,32 @@ type ZodSchema = {
   [route: string]: RouterEndpointDefinition<string>;
 };
 
-export type OneSchemaRouterConfig<R extends Router<any, any>> = {
+export type OneSchemaRouterConfig<
+  R extends Router<any, any>,
+  IR extends Router<any, any> = R,
+> = {
   using: R;
-  introspection: IntrospectionConfig | undefined;
+  introspection: IntrospectionConfig<IR> | undefined;
 };
 
 export class OneSchemaRouter<
   Schema extends ZodSchema,
   R extends Router<any, any>,
+  IR extends Router<any, any> = R,
 > {
   private router: R;
 
   private constructor(
     private schema: Schema,
-    { introspection, using: router }: OneSchemaRouterConfig<R>,
+    public config: OneSchemaRouterConfig<R, IR>,
   ) {
+    const { introspection, using: router } = config;
     this.router = router;
+
     if (introspection) {
-      router.get(introspection.route, (ctx, next) => {
+      const introRouter = introspection.router || router;
+
+      introRouter.get(introspection.route, (ctx, next) => {
         const response: IntrospectionResponse = {
           serviceVersion: introspection.serviceVersion,
           schema: convertRouterSchemaToJSONSchemaStyle(this.schema),
@@ -51,9 +59,9 @@ export class OneSchemaRouter<
     }
   }
 
-  static create<R extends Router<any, any>>(
-    config: OneSchemaRouterConfig<R>,
-  ): OneSchemaRouter<{}, R> {
+  static create<R extends Router<any, any>, IR extends Router<any, any> = R>(
+    config: OneSchemaRouterConfig<R, IR>,
+  ): OneSchemaRouter<{}, R, IR> {
     return new OneSchemaRouter({}, config);
   }
 

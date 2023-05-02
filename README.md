@@ -53,6 +53,43 @@ const app = new Koa().use(router.middleware());
 app.listen();
 ```
 
+In case the main router requires authorization headers, and you want to query the introspection route without them, you can expose it on a custom router
+like so:
+
+```typescript
+const router = OneSchemaRouter.create({
+  using: new Router(),
+  introspection: {
+    route: '/introspection',
+    router: new Router({ prefix: '/private' }),
+    serviceVersion: process.env.LIFEOMIC_SERVICE_VERSION,
+  },
+})
+  .declare({
+    route: 'POST /items',
+    name: 'createItem',
+    request: z.object({ message: z.string() }),
+    response: z.object({ id: z.string(), message: z.string() }),
+  })
+  .declare({
+    route: 'GET /items/:id',
+    name: 'getItemById',
+    request: z.object({ filter: z.string() }),
+    response: z.object({ id: z.string(), message: z.string() }),
+  });
+
+// Be sure to expose your router's routes on a Koa app.
+import Koa from 'koa';
+
+const app = new Koa().use(router.middleware());
+
+if (router.config.instrospection.router) {
+  app.use(router.config.introspection.router.middleware());
+}
+
+app.listen();
+```
+
 Once you have routes declared, add implementations for each route. Enjoy perfect type inference and auto-complete for path parameters, query parameters, and the request body.
 
 ```typescript
