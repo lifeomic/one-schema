@@ -22,7 +22,7 @@ export type ImplementationOf<
   >;
 };
 
-export type IntrospectionConfig = {
+export type IntrospectionConfig<R extends Router<any, any>> = {
   /**
    * A route at which to serve the introspection request on the implementing
    * Router object.
@@ -34,6 +34,10 @@ export type IntrospectionConfig = {
    * The current version of the service, served as part of introspection.
    */
   serviceVersion: string;
+  /**
+   * An optional alernative router to use for the introspection route.
+   */
+  router?: R;
 };
 
 /**
@@ -42,6 +46,7 @@ export type IntrospectionConfig = {
 export type ImplementationConfig<
   Schema extends OneSchema<any>,
   RouterType extends Router<any, any>,
+  IntrospectionRouterType extends Router<any, any> = RouterType,
 > = {
   /**
    * The implementation of the API.
@@ -78,7 +83,7 @@ export type ImplementationConfig<
   ) => Schema['Endpoints'][Endpoint]['Request'];
 
   /** A configuration for supporting introspection. */
-  introspection: IntrospectionConfig | undefined;
+  introspection: IntrospectionConfig<IntrospectionRouterType> | undefined;
 };
 
 const ajv = new Ajv();
@@ -123,7 +128,8 @@ export const implementSchema = <
   }: ImplementationConfig<Schema, RouterType>,
 ): void => {
   if (introspection) {
-    router.get(introspection.route, (ctx, next) => {
+    const introRouter = introspection.router || router;
+    introRouter.get(introspection.route, (ctx, next) => {
       const response: IntrospectionResponse = {
         schema,
         serviceVersion: introspection.serviceVersion,
