@@ -541,3 +541,44 @@ test('declaring multiple routes with the same name results in an error', () => {
     'Multiple endpoints were declared with the same name "createSomething". Each endpoint must have a unique name.',
   );
 });
+
+test('the client(...) helper', async () => {
+  const router = OneSchemaRouter.create({
+    using: new Router(),
+    introspection: undefined,
+  })
+    .declare({
+      route: 'POST /items',
+      name: 'createItem',
+      request: z.object({ id: z.string() }),
+      response: z.object({ id: z.string() }),
+    })
+    .implement('POST /items', (ctx) => ({ id: ctx.request.body.id }))
+    .declare({
+      route: 'GET /items/:id',
+      name: 'getItemById',
+      request: z.object({
+        filter: z.string(),
+      }),
+      response: z.object({ id: z.string() }),
+    })
+    .implement('GET /items/:id', (ctx) => ({
+      id: ctx.params.id + ':' + ctx.request.query.filter,
+    }));
+
+  const { client: axios } = serve(router);
+
+  const client = router.client(axios);
+
+  const getResponse = await client.getItemById({
+    id: 'some-id',
+    filter: 'some-filter',
+  });
+
+  expect(getResponse.status).toStrictEqual(200);
+  expect(getResponse.data).toStrictEqual({ id: 'some-id:some-filter' });
+
+  const postResponse = await client.createItem({ id: 'some-id' });
+  expect(postResponse.status).toStrictEqual(200);
+  expect(postResponse.data).toStrictEqual({ id: 'some-id' });
+});

@@ -4,8 +4,13 @@ import { fromZodError } from 'zod-validation-error';
 import zodToJsonSchema from 'zod-to-json-schema';
 import compose = require('koa-compose');
 import { IntrospectionConfig } from './koa';
-import { EndpointImplementation, implementRoute } from './koa-utils';
+import {
+  EndpointImplementation,
+  implementRoute,
+  PathParamsOf,
+} from './koa-utils';
 import { IntrospectionResponse, OneSchemaDefinition } from './types';
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export type RouterEndpointDefinition<Name> = {
   name: Name;
@@ -24,6 +29,13 @@ type ZodSchema = {
 export type OneSchemaRouterConfig<R extends Router<any, any>> = {
   using: R;
   introspection: IntrospectionConfig | undefined;
+};
+
+export type NamedClient<Schema extends ZodSchema> = {
+  [Route in keyof Schema as Schema[Route]['name']]: (
+    request: z.infer<Schema[Route]['request']> & PathParamsOf<Route>,
+    config?: AxiosRequestConfig,
+  ) => Promise<AxiosResponse<z.infer<Schema[Route]['response']>>>;
 };
 
 export class OneSchemaRouter<
@@ -124,6 +136,50 @@ export class OneSchemaRouter<
       );
     }
     return compose(middlewares);
+  }
+
+  /**
+   * Creates a user-friendly client for the router, using the provided Axios instance.
+   */
+  client(axios: AxiosInstance): NamedClient<Schema> {
+    // Getting correct dynamic typing on this is quite complicated. For now, not worth it.
+    const client = {} as any;
+
+    const substituteParams = (path: string, payload: Record<string, any>) =>
+      Object.entries(payload).reduce(
+        (path, [name, value]) =>
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          path.replace(':' + name, encodeURIComponent(value)),
+        path,
+      );
+
+    const removePathParams = (path: string, payload: Record<string, any>) =>
+      Object.entries(payload)
+        .filter(([, value]) => value !== undefined)
+        .reduce(
+          (accum, [name, value]) =>
+            path.includes(':' + name) ? accum : { ...accum, [name]: value },
+          {},
+        );
+
+    for (const [route, endpoint] of Object.entries(this.schema)) {
+      const [method, path] = route.split(' ') as [Method, string];
+      client[endpoint.name] = (payload: any, config?: AxiosRequestConfig) => {
+        return axios.request({
+          method,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          url: substituteParams(path, payload),
+          ...(['GET', 'DELETE'].includes(method)
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+              { params: removePathParams(path, payload) }
+            : // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+              { data: removePathParams(path, payload) }),
+          ...config,
+        });
+      };
+    }
+
+    return client;
   }
 }
 
