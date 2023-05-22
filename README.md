@@ -12,7 +12,8 @@ At a high level, `one-schema` provides end-to-end type safety via the following 
 
 - In your service repo, use `OneSchemaRouter` to declare your routes.
 - Deploy new service code.
-- In your client repo, generate a type-safe client by introspecting the deployed schema.
+- In your client repo, "introspect" your deployed schema using `one-schema fetch-remote-schema`.
+- In your client repo, generate a type-safe client from this^ introspected schema using `one-schema generate-axios-client`.
 
 **Note**: for documentation on the legacy flow of defining schemas in a YAML file, see [the legacy docs](./docs/yaml-flow.md).
 
@@ -291,8 +292,8 @@ The output (in `generated-openapi-schema.json`):
 
 ## CLI Reference
 
-TODO
+For a full list of API commands and details on usage, run `one-schema --help`.
 
 ## API Reference
 
-TODO
+See the in-line documentation in the source code + package for details on the exposed APIs.
