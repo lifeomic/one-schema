@@ -15,10 +15,9 @@
     "one-schema": "./bin/cli.js"
   },
   "dependencies": {
-    "@lifeomic/alpha": "^4.0.1",
+    "@lifeomic/alpha": "^5.1.1",
     "@types/json-schema": "^7.0.11",
     "ajv": "^8.11.0",
-    "aws-sdk": "^2.1146.0",
     "axios": "^0.27.2",
     "js-yaml": "^4.1.0",
     "json-schema-to-typescript": "^10.1.5",
@@ -38,6 +37,7 @@
     "@types/koa__router": "^8.0.11",
     "@types/node": "^14.0.0",
     "@types/tmp": "^0.2.3",
+    "@types/uuid": "^9.0.1",
     "@types/yargs": "^17.0.10",
     "conventional-changelog-conventionalcommits": "^4.6.3",
     "eslint": "^8.16.0",
@@ -54,6 +54,7 @@
     "ts-jest": "^28.0.3",
     "ts-node": "^10.8.0",
     "typescript": "^4.7.2",
+    "uuid": "^9.0.0",
     "zod": "^3.20.2"
   }
 }
