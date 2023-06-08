@@ -266,10 +266,7 @@ describe('type inference', () => {
             // API should enforce a string, but the code should receive a number.
             message: z.string().transform((val) => Number(val)),
           }),
-          response: z.object({
-            // The code should return a number, and the API should return a string.
-            message: z.number(),
-          }),
+          response: z.object({ message: z.number() }),
         })
         .implement('GET /items', (ctx) => {
           // this statement helps us validate that the message is typed as a Number
@@ -284,10 +281,7 @@ describe('type inference', () => {
             // API should enforce a string, but the code should receive a number.
             message: z.string().transform((val) => Number(val)),
           }),
-          response: z.object({
-            // The code should return a number, and the API should return a string.
-            message: z.number(),
-          }),
+          response: z.object({ message: z.number() }),
         })
         .implement('POST /items', (ctx) => {
           // this statement helps us validate that the message is typed as a Number
