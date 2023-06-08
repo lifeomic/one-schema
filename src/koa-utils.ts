@@ -116,7 +116,22 @@ export const implementRoute = <
     // 1. Validate the input data.
     // 1a. For GET and DELETE, validate the query params.
     if (['GET', 'DELETE'].includes(method)) {
-      ctx.request.query = parse(ctx, ctx.request.query);
+      // We want to allow data modifications during `parse`. But, Koa
+      // will not let us re-set the `.query` property entirely. So, we
+      // have to manually remove each key, then use Object.assign(...)
+      // to re-add the parsed data.
+
+      // This spread operator is important. Why:
+      // Some simple `parse` implementations will simply validate the
+      // ctx.request.query data, then return the same object as the "parsed"
+      // response. In that scenario, we need to make a copy of the data before
+      // deleting keys on ctx.request.query, because that would _also_ delete
+      // the keys on the object returned from parse(...)
+      const query = { ...parse(ctx, ctx.request.query) };
+      for (const key in ctx.request.query) {
+        delete ctx.request.query[key];
+      }
+      Object.assign(ctx.request.query, query);
     } else {
       // 1b. Otherwise, use the body.
       ctx.request.body = parse(ctx, ctx.request.body);
