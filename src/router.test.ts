@@ -328,6 +328,58 @@ describe('input validation', () => {
   });
 });
 
+describe('output validation', () => {
+  (['GET', 'DELETE', 'POST', 'PUT', 'PATCH'] as const).forEach((method) => {
+    test(`${method} requests throw an Error when response type does not match the schema`, async () => {
+      const { client } = setup((router) =>
+        router
+          .declare({
+            name: 'createItem',
+            route: `${method} /items`,
+            request: z.object({}),
+            response: z.object({ message: z.string() }),
+          })
+          .implement(`${method} /items`, () => ({
+            // @ts-expect-error Intentionally writing incorrect TS here
+            message: 123,
+          })),
+      );
+
+      const { status } = await client.request({
+        method,
+        url: '/items',
+      });
+
+      expect(status).toStrictEqual(500);
+    });
+
+    test(`${method} requests allow extra fields on response values and strip them from responses`, async () => {
+      const { client } = setup((router) =>
+        router
+          .declare({
+            name: 'createItem',
+            route: `${method} /items`,
+            request: z.object({}),
+            response: z.object({ message: z.string() }),
+          })
+          .implement(`${method} /items`, () => ({
+            message: 'test-message',
+            anotherField: 1234,
+          })),
+      );
+
+      const { status, data } = await client.request({
+        method,
+        url: '/items',
+      });
+
+      expect(status).toStrictEqual(200);
+      // Ensure `anotherField` was stripped.
+      expect(data).toStrictEqual({ message: 'test-message' });
+    });
+  });
+});
+
 describe('implementations', () => {
   (['POST', 'PUT', 'PATCH'] as const).forEach((method) => {
     test(`rejects requests that do not match the schema for ${method} requests`, async () => {
@@ -470,8 +522,6 @@ describe('introspection', () => {
     const { client } = serve(router);
 
     const introspectionResult = await client.get('/private/introspection');
-
-    console.log(JSON.stringify(introspectionResult.data, null, 2));
 
     expect(introspectionResult.data.schema).toStrictEqual({
       Endpoints: {

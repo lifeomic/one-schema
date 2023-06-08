@@ -120,7 +120,17 @@ export class OneSchemaRouter<
         }
         return res.data;
       },
-      implementation,
+      async (ctx) => {
+        const result = await implementation(ctx);
+        const res = endpoint.response.safeParse(result);
+        if (!res.success) {
+          return ctx.throw(
+            500,
+            `A response value from endpoint '${route}' did not conform to the response schema.`,
+          );
+        }
+        return res.data;
+      },
     );
 
     return this;
