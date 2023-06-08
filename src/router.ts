@@ -33,10 +33,17 @@ export type OneSchemaRouterConfig<R extends Router<any, any>> = {
 
 export type NamedClient<Schema extends ZodSchema> = {
   [Route in keyof Schema as Schema[Route]['name']]: (
-    request: z.infer<Schema[Route]['request']> & PathParamsOf<Route>,
+    request: z.input<Schema[Route]['request']> & PathParamsOf<Route>,
     config?: AxiosRequestConfig,
   ) => Promise<AxiosResponse<z.infer<Schema[Route]['response']>>>;
 };
+
+export type NamedClientFor<Router> = Router extends OneSchemaRouter<
+  infer Schema,
+  any
+>
+  ? NamedClient<Schema>
+  : never;
 
 export class OneSchemaRouter<
   Schema extends ZodSchema,
@@ -100,7 +107,7 @@ export class OneSchemaRouter<
     route: Route,
     implementation: EndpointImplementation<
       Route,
-      z.infer<Schema[Route]['request']>,
+      z.output<Schema[Route]['request']>,
       z.infer<Schema[Route]['response']>,
       R
     >,

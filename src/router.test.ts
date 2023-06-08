@@ -5,7 +5,7 @@ import { format } from 'prettier';
 import Koa = require('koa');
 import Router = require('@koa/router');
 import bodyparser = require('koa-bodyparser');
-import { OneSchemaRouter } from './router';
+import { NamedClientFor, OneSchemaRouter } from './router';
 import { z } from 'zod';
 import { generateAxiosClient } from './generate-axios-client';
 
@@ -16,11 +16,18 @@ afterEach(() => {
 
 const setup = <T extends OneSchemaRouter<any, any>>(
   expose: (router: OneSchemaRouter<{}, Router>) => T,
-): { client: AxiosInstance } => {
+): { client: AxiosInstance; typed: NamedClientFor<T> } => {
   const router = expose(
     OneSchemaRouter.create({ using: new Router(), introspection: undefined }),
   );
-  return serve(router);
+
+  const { client } = serve(router);
+
+  return {
+    client,
+    // @ts-expect-error TS is too dumb to know that this is right.
+    typed: router.client(client),
+  };
 };
 
 const serve = (
@@ -247,6 +254,76 @@ describe('type inference', () => {
           return ctx.request.query;
         }),
     );
+  });
+
+  test('type inference when using Zod transforms', async () => {
+    const clients = setup((router) =>
+      router
+        .declare({
+          name: 'getItems',
+          route: 'GET /items',
+          request: z.object({
+            // API should enforce a string, but the code should receive a number.
+            message: z.string().transform((val) => Number(val)),
+          }),
+          response: z.object({
+            // The code should return a number, and the API should return a string.
+            message: z.number(),
+          }),
+        })
+        .implement('GET /items', (ctx) => {
+          // this statement helps us validate that the message is typed as a Number
+          ctx.request.query.message.toFixed();
+          // This should compile -- it's enforcing a number.
+          return { message: 1 };
+        })
+        .declare({
+          name: 'createItem',
+          route: 'POST /items',
+          request: z.object({
+            // API should enforce a string, but the code should receive a number.
+            message: z.string().transform((val) => Number(val)),
+          }),
+          response: z.object({
+            // The code should return a number, and the API should return a string.
+            message: z.number(),
+          }),
+        })
+        .implement('POST /items', (ctx) => {
+          // this statement helps us validate that the message is typed as a Number
+          ctx.request.body.message.toFixed();
+          // This should compile -- it's enforcing a number.
+          return { message: 2 };
+        }),
+    );
+    // ---- GET VALIDATIONS ----
+
+    // Assert that client types enforce the API types.
+    const getInput: Parameters<typeof clients.typed.getItems>[0] = {} as any;
+    // @ts-expect-error This should fail -- the API requires a string
+    getInput.message = 1;
+
+    // This should compile -- the API requires a string.
+    const getResult = await clients.typed.getItems({ message: '1' });
+
+    // Confirm response is runtime correct.
+    expect(getResult.data).toStrictEqual({ message: 1 });
+    // this statement helps us validate that the response is typed correctly, as a number.
+    getResult.data.message.toFixed();
+
+    // ---- POST VALIDATIONS ----
+    // Assert that client types enforce the API types.
+    const postInput: Parameters<typeof clients.typed.createItem>[0] = {} as any;
+    // @ts-expect-error This should fail -- the API requires a string
+    postInput.message = 1;
+
+    // This should compile -- the API requires a string.
+    const postResult = await clients.typed.createItem({ message: '1' });
+
+    // Confirm response is runtime correct.
+    expect(postResult.data).toStrictEqual({ message: 2 });
+    // this statement helps us validate that the response is typed correctly, as a number.
+    postResult.data.message.toFixed();
   });
 });
 
