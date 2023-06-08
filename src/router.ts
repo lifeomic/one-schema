@@ -124,10 +124,10 @@ export class OneSchemaRouter<
         const result = await implementation(ctx);
         const res = endpoint.response.safeParse(result);
         if (!res.success) {
-          return ctx.throw(
-            500,
-            `A response value from endpoint '${route}' did not conform to the response schema.`,
-          );
+          const friendlyError = fromZodError(res.error, {
+            prefix: `A response value from endpoint '${route}' did not conform to the response schema.`,
+          });
+          return ctx.throw(500, friendlyError.message);
         }
         return res.data;
       },
