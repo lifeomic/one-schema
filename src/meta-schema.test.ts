@@ -271,7 +271,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError('Encountered an invalid ref: bogus-ref');
+    ).toThrow('Encountered an invalid ref: bogus-ref');
   });
 
   test('checks for invalid refs', () => {
@@ -287,7 +287,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError('Encountered an invalid ref: #/definitions/Bogus');
+    ).toThrow('Encountered an invalid ref: #/definitions/Bogus');
   });
 
   test('checks for object types in Request schemas', () => {
@@ -301,7 +301,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError(
+    ).toThrow(
       'Detected a non-object Request schema for POST posts. Request schemas must be objects.',
     );
   });
@@ -322,7 +322,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError(
+    ).toThrow(
       'Detected a non-object Request schema for POST posts. Request schemas must be objects.',
     );
   });
@@ -344,7 +344,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError(
+    ).toThrow(
       'The id parameter was declared as a path parameter and a Request property for PUT posts/:id. Rename either the path parameter or the request property to avoid a collision.',
     );
   });
@@ -369,7 +369,7 @@ describe('validateSchema', () => {
           },
         },
       }),
-    ).toThrowError(
+    ).toThrow(
       'The id parameter was declared as a path parameter and a Request property for PUT posts/:id. Rename either the path parameter or the request property to avoid a collision.',
     );
   });

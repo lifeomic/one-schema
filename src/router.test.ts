@@ -658,7 +658,7 @@ test('declaring multiple routes with the same name results in an error', () => {
         request: z.object({}),
         response: z.object({}),
       });
-  }).toThrowError(
+  }).toThrow(
     'Multiple endpoints were declared with the same name "createSomething". Each endpoint must have a unique name.',
   );
 });

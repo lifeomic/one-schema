@@ -26,7 +26,7 @@ test('using unsupported methods throws immediately', () => {
         introspection: undefined,
       },
     );
-  }).toThrowError('Unsupported method detected: OPTIONS /post');
+  }).toThrow('Unsupported method detected: OPTIONS /post');
 });
 
 test('setting a 200-level response code overrides the response', async () => {
