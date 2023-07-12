@@ -2,6 +2,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 import type { OneSchemaDefinition } from './types';
 import { deepCopy } from './generate-endpoints';
 import { validateSchema } from './meta-schema';
+import { JSONSchema4 } from 'json-schema';
 
 /**
  * Converts e.g. `/users/:id/profile` to `/users/{id}/profile`.
@@ -17,6 +18,24 @@ const getPathParameters = (koaPath: string) =>
     .split('/')
     .filter((part) => part.startsWith(':'))
     .map((part) => part.slice(1));
+
+/**
+ * @param schema json schema object
+ * @return supported openapi schema object type
+ */
+const getSchemaObjectType = (
+  schema: JSONSchema4,
+): OpenAPIV3.NonArraySchemaObjectType => {
+  // TODO supports more types from JSON schema
+  switch (schema.type) {
+    case 'integer':
+      return 'integer';
+    case 'number':
+      return 'number';
+    default:
+      return 'string';
+  }
+};
 
 export const toOpenAPISpec = (
   schema: OneSchemaDefinition,
@@ -87,7 +106,7 @@ export const toOpenAPISpec = (
             in: 'query',
             name,
             description: schema.description,
-            schema: { type: 'string' },
+            schema: { type: getSchemaObjectType(schema) },
             required:
               Array.isArray(Request.required) &&
               Request.required.includes(name),
