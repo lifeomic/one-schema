@@ -29,6 +29,16 @@ const TEST_SPEC: OneSchemaDefinition = withAssumptions({
             type: 'string',
             optional: true,
           },
+          limit: {
+            description: 'page size',
+            type: 'integer',
+            optional: true,
+          },
+          updatedAt: {
+            description: 'epoch time',
+            type: 'number',
+            optional: true,
+          },
         },
       },
       Response: {
@@ -131,6 +141,20 @@ describe('toOpenAPISpec', () => {
                 name: 'filter',
                 required: false,
                 schema: { type: 'string' },
+              },
+              {
+                in: 'query',
+                description: 'page size',
+                name: 'limit',
+                required: false,
+                schema: { type: 'integer' },
+              },
+              {
+                in: 'query',
+                description: 'epoch time',
+                name: 'updatedAt',
+                required: false,
+                schema: { type: 'number' },
               },
             ],
             responses: {
