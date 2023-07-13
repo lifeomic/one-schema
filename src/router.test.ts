@@ -638,6 +638,145 @@ describe('introspection', () => {
       },
     });
   });
+
+  it('can generate an OpenAPI schema', async () => {
+    const { client } = setup(() =>
+      OneSchemaRouter.create({
+        using: new Router(),
+        introspection: {
+          route: '/private/introspection',
+          serviceVersion: '123',
+          openApi: {
+            route: '/private/openapi',
+            info: {
+              title: 'My Service',
+            },
+          },
+        },
+      })
+        .declare({
+          name: 'getSomething',
+          route: 'GET /something/:id',
+          description: 'it gets something',
+          request: z.object({ filter: z.string() }),
+          response: z.object({ message: z.string(), id: z.string() }),
+        })
+        .implement('GET /something/:id', () => ({ id: '', message: '' }))
+        .declare({
+          name: 'createSomething',
+          route: 'POST /something',
+          description: 'it creates something',
+          request: z.object({ message: z.string() }),
+          response: z.object({ message: z.string(), id: z.string() }),
+        })
+        .implement('POST /something', () => ({ id: '', message: '' })),
+    );
+
+    const result = await client.get('/private/openapi');
+    expect(result.data).toStrictEqual({
+      openapi: '3.0.0',
+      info: {
+        title: 'My Service',
+        version: '123',
+      },
+      components: {},
+      paths: {
+        '/something/{id}': {
+          get: {
+            operationId: 'getSomething',
+            description: 'it gets something',
+            responses: {
+              '200': {
+                description: 'A successful response',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        message: {
+                          type: 'string',
+                        },
+                        id: {
+                          type: 'string',
+                        },
+                      },
+                      required: ['message', 'id'],
+                      additionalProperties: false,
+                      $schema: 'http://json-schema.org/draft-07/schema#',
+                    },
+                  },
+                },
+              },
+            },
+            parameters: [
+              {
+                name: 'id',
+                in: 'path',
+                schema: {
+                  type: 'string',
+                },
+                required: true,
+              },
+              {
+                in: 'query',
+                name: 'filter',
+                schema: {
+                  type: 'string',
+                },
+                required: true,
+              },
+            ],
+          },
+        },
+        '/something': {
+          post: {
+            operationId: 'createSomething',
+            description: 'it creates something',
+            responses: {
+              '200': {
+                description: 'A successful response',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        message: {
+                          type: 'string',
+                        },
+                        id: {
+                          type: 'string',
+                        },
+                      },
+                      required: ['message', 'id'],
+                      additionalProperties: false,
+                      $schema: 'http://json-schema.org/draft-07/schema#',
+                    },
+                  },
+                },
+              },
+            },
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: {
+                        type: 'string',
+                      },
+                    },
+                    required: ['message'],
+                    additionalProperties: false,
+                    $schema: 'http://json-schema.org/draft-07/schema#',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 });
 
 test('declaring multiple routes with the same name results in an error', () => {

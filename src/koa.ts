@@ -1,7 +1,7 @@
 import { JSONSchema4 } from 'json-schema';
 import type { ParameterizedContext } from 'koa';
 import type Router from '@koa/router';
-import type { EndpointsOf, IntrospectionResponse, OneSchema } from './types';
+import type { EndpointsOf, IntrospectionConfig, OneSchema } from './types';
 import Ajv from 'ajv';
 import {
   ContextOfRouter,
@@ -9,6 +9,7 @@ import {
   implementRoute,
   StateOfRouter,
 } from './koa-utils';
+import { addIntrospection } from './introspection';
 
 export type ImplementationOf<
   Schema extends OneSchema<any>,
@@ -20,24 +21,6 @@ export type ImplementationOf<
     EndpointsOf<Schema>[Name]['Response'],
     RouterType
   >;
-};
-
-export type IntrospectionConfig = {
-  /**
-   * A route at which to serve the introspection request on the implementing
-   * Router object.
-   *
-   * A GET method will be supported on this route, and will return introspection data.
-   */
-  route: string;
-  /**
-   * The current version of the service, served as part of introspection.
-   */
-  serviceVersion: string;
-  /**
-   * An optional alternative router to use for the introspection route.
-   */
-  router?: Router<any, any>;
 };
 
 /**
@@ -127,17 +110,7 @@ export const implementSchema = <
   }: ImplementationConfig<Schema, RouterType>,
 ): void => {
   if (introspection) {
-    const introRouter = introspection.router || router;
-    introRouter.get(introspection.route, (ctx, next) => {
-      const response: IntrospectionResponse = {
-        schema,
-        serviceVersion: introspection.serviceVersion,
-      };
-
-      ctx.body = response;
-      ctx.status = 200;
-      return next();
-    });
+    addIntrospection(introspection, () => schema, router);
   }
 
   // Iterate through every handler, and add a route for it based on
