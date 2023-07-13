@@ -26,12 +26,13 @@ const getPathParameters = (koaPath: string) =>
 const getSchemaObjectType = (
   schema: JSONSchema4,
 ): OpenAPIV3.NonArraySchemaObjectType => {
-  // TODO supports more types from JSON schema
+  // TODO support array and object type
   switch (schema.type) {
     case 'integer':
-      return 'integer';
     case 'number':
-      return 'number';
+    case 'boolean':
+    case 'string':
+      return <OpenAPIV3.NonArraySchemaObjectType>schema.type;
     default:
       return 'string';
   }
