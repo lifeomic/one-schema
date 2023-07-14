@@ -3,14 +3,14 @@ import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import zodToJsonSchema from 'zod-to-json-schema';
 import compose = require('koa-compose');
-import { IntrospectionConfig } from './koa';
 import {
   EndpointImplementation,
   implementRoute,
   PathParamsOf,
 } from './koa-utils';
-import { IntrospectionResponse, OneSchemaDefinition } from './types';
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { addIntrospection } from './introspection';
+import { IntrospectionConfig, OneSchemaDefinition } from './types';
 
 export type RouterEndpointDefinition<Name> = {
   name: Name;
@@ -57,20 +57,12 @@ export class OneSchemaRouter<
   ) {
     const { introspection, using: router } = config;
     this.router = router;
-
     if (introspection) {
-      const introRouter = introspection.router || router;
-
-      introRouter.get(introspection.route, (ctx, next) => {
-        const response: IntrospectionResponse = {
-          serviceVersion: introspection.serviceVersion,
-          schema: convertRouterSchemaToJSONSchemaStyle(this.schema),
-        };
-
-        ctx.body = response;
-        ctx.status = 200;
-        return next();
-      });
+      addIntrospection(
+        introspection,
+        () => convertRouterSchemaToJSONSchemaStyle(this.schema),
+        router,
+      );
     }
   }
 

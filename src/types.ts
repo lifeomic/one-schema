@@ -1,4 +1,6 @@
+import type Router from '@koa/router';
 import type { JSONSchema4 } from 'json-schema';
+import type { OpenAPIV3 } from 'openapi-types';
 
 export type EndpointDefinition = {
   Name: string;
@@ -39,6 +41,40 @@ export type OneSchema<Endpoints extends GeneratedEndpointsType> =
 export type EndpointsOf<Schema extends OneSchema<any>> = NonNullable<
   Schema['__endpoints_type__']
 >;
+
+export type IntrospectionConfig = {
+  /**
+   * A route at which to serve the introspection request on the implementing
+   * Router object.
+   *
+   * A GET method will be supported on this route, and will return introspection data.
+   */
+  route: string;
+  /**
+   * If provided, an endpoint for returning the OpenAPI schema for the implementing router
+   * will be set up.
+   */
+  openApi?: {
+    /**
+     * A route at which to serve the OpenAPI schema for the implementing router object.
+     *
+     * A GET method will be supported on this route, and will return the OpenAPI schema.
+     */
+    route: string;
+    /**
+     * API metadata info to include in the returned OpenAPI schema.
+     */
+    info: Omit<OpenAPIV3.InfoObject, 'version'>;
+  };
+  /**
+   * The current version of the service, served as part of introspection.
+   */
+  serviceVersion: string;
+  /**
+   * An optional alternative router to use for the introspection routes.
+   */
+  router?: Router<any, any>;
+};
 
 export type IntrospectionResponse = {
   schema: OneSchemaDefinition;
