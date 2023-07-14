@@ -133,28 +133,37 @@ describe('toOpenAPISpec', () => {
                 in: 'query',
                 name: 'sort',
                 required: true,
-                schema: { type: 'string' },
+                schema: { enum: ['asc', 'desc'] },
               },
               {
                 in: 'query',
                 description: 'A filter to apply to posts',
                 name: 'filter',
                 required: false,
-                schema: { type: 'string' },
+                schema: {
+                  type: 'string',
+                  description: 'A filter to apply to posts',
+                },
               },
               {
                 in: 'query',
                 description: 'page size',
                 name: 'limit',
                 required: false,
-                schema: { type: 'integer' },
+                schema: {
+                  type: 'integer',
+                  description: 'page size',
+                },
               },
               {
                 in: 'query',
                 description: 'epoch time',
                 name: 'updatedAt',
                 required: false,
-                schema: { type: 'number' },
+                schema: {
+                  type: 'number',
+                  description: 'epoch time',
+                },
               },
             ],
             responses: {
