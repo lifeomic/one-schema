@@ -70,27 +70,6 @@ export type ImplementationConfig<
 
 const ajv = new Ajv();
 
-const defaultParse: ImplementationConfig<any, any>['parse'] = (
-  ctx,
-  { endpoint, data, schema },
-) => {
-  if (!ajv.validate(schema, data)) {
-    const method = (endpoint as string).split(' ')[0];
-    const dataVar = ['GET', 'DELETE'].includes(method)
-      ? 'query parameters'
-      : 'payload';
-
-    return ctx.throw(
-      400,
-      `The request did not conform to the required schema: ${ajv.errorsText(
-        undefined,
-        { dataVar },
-      )}`,
-    );
-  }
-  return data as any;
-};
-
 /**
  * Implements the specified `schema` on the provided router object.
  *
@@ -113,12 +92,33 @@ export const implementSchema = <
     addIntrospection(introspection, () => schema, router);
   }
 
+  const defaultParse: ImplementationConfig<Schema, RouterType>['parse'] = (
+    ctx,
+    { endpoint, data, schema },
+  ) => {
+    if (!ajv.validate(schema, data)) {
+      const method = (endpoint as string).split(' ')[0];
+      const dataVar = ['GET', 'DELETE'].includes(method)
+        ? 'query parameters'
+        : 'payload';
+
+      return ctx.throw(
+        400,
+        `The request did not conform to the required schema: ${ajv.errorsText(
+          undefined,
+          { dataVar },
+        )}`,
+      );
+    }
+    return data;
+  };
+
   // Iterate through every handler, and add a route for it based on
   // the key/route description.
   for (const endpoint in implementation) {
     const routeHandler = implementation[endpoint];
 
-    const parser: typeof parse = parse ?? defaultParse;
+    const parser = parse ?? defaultParse;
 
     implementRoute(
       endpoint,
