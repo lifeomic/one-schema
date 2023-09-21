@@ -14,11 +14,12 @@ export const generateEndpointTypes = async ({
   Endpoints,
 }: OneSchemaDefinition) => {
   const masterSchema: JSONSchema4 = Object.entries(Endpoints).reduce(
-    (accum, [key, { Request, Response }]) => ({
+    (accum, [key, { Description, Request, Response }]) => ({
       ...accum,
       properties: {
         ...accum.properties,
         [key]: {
+          description: Description,
           type: 'object',
           additionalProperties: false,
           required: ['Request', 'PathParams', 'Response'],

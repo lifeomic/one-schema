@@ -155,6 +155,13 @@ export type Endpoints = {
       output?: string;
     };
   };
+  /**
+   * This is a long description about a field. It contains lots of very long text. Sometimes the text might be over the desired line length.
+   *
+   * It contains newlines.
+   *
+   * ## It contains markdown.
+   */
   "PUT /posts/:id": {
     Request: {
       message?: string;
