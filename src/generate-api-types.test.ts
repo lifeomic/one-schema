@@ -156,6 +156,7 @@ export const Schema: OneSchema<Endpoints> = {
           Endpoints: {
             'GET /fruits': {
               Name: 'getPosts',
+              Description: 'Fetches an array of all fruits.',
               Request: {},
               Response: {
                 type: 'array',
@@ -171,6 +172,9 @@ export const Schema: OneSchema<Endpoints> = {
 import type { OneSchema } from "@lifeomic/one-schema";
 
 export type Endpoints = {
+  /**
+   * Fetches an array of all fruits.
+   */
   "GET /fruits": {
     Request: unknown;
     PathParams: {};
@@ -220,6 +224,7 @@ export const Schema: OneSchema<Endpoints> = {
   Endpoints: {
     "GET /fruits": {
       Name: "getPosts",
+      Description: "Fetches an array of all fruits.",
       Request: {},
       Response: { type: "array", items: { $ref: "#/definitions/Fruit" } },
     },
