@@ -57,6 +57,7 @@ export const generateEndpointTypes = async ({
       await compile(deepCopy(masterSchema), '', {
         format: false,
         bannerComment: '',
+        unreachableDefinitions: true,
       })
     )
       /**
@@ -73,5 +74,25 @@ export const generateEndpointTypes = async ({
         const name = matched.split(' ')[2];
         return `export type ${name} = {`;
       })
+      /**
+       * When the json-schema-to-typescript `unreachableDefinitions` setting is `true`, it outputs
+       * some ugly comments on the generated types, so we remove them.
+       *
+       * Relevant GitHub issue in json-schema-to-typescript:
+       * https://github.com/bcherny/json-schema-to-typescript/issues/428
+       */
+      .replace(
+        /^\s*\/\*\*\s+\* This interface was referenced by `.*`'s JSON-Schema\s+\* via the `definition` ".*"\.\s+\*\//gm,
+        '',
+      )
+      /**
+       * Same as above ^^^ but handling the case where the ugly comment is appended to an already
+       * existing comment. We keep the original comment but remove json-schema-to-typescript's ugly
+       * addition.
+       */
+      .replace(
+        /\n\s*\*\s+\* This interface was referenced by `.*`'s JSON-Schema\s+\* via the `definition` ".*"\./gm,
+        '',
+      )
   );
 };

@@ -121,6 +121,112 @@ export const Schema: OneSchema<Endpoints> = {
 };
 `,
     },
+    {
+      input: {
+        spec: {
+          Resources: {
+            Fruit: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'price'],
+              properties: {
+                name: { type: 'string' },
+                price: { type: 'number' },
+              },
+            },
+            // This resource is not referenced by any endpoint, but should be
+            // included in the generated types.
+            Pet: {
+              type: 'object',
+              // type-level comments should be preserved.
+              description: 'A pet from the animal kingdom.',
+              additionalProperties: false,
+              required: ['name', 'age', 'species'],
+              properties: {
+                name: {
+                  type: 'string',
+                  // field-level comments should be preserved.
+                  description: 'The name of the pet as given by the owner.',
+                },
+                age: { type: 'number' },
+                species: { type: 'string' },
+              },
+            },
+          },
+          Endpoints: {
+            'GET /fruits': {
+              Name: 'getPosts',
+              Request: {},
+              Response: {
+                type: 'array',
+                items: {
+                  $ref: '#/definitions/Fruit',
+                },
+              },
+            },
+          },
+        },
+      },
+      expected: `/* eslint-disable */
+import type { OneSchema } from "@lifeomic/one-schema";
+
+export type Endpoints = {
+  "GET /fruits": {
+    Request: unknown;
+    PathParams: {};
+    Response: Fruit[];
+  };
+};
+
+export type Fruit = {
+  name: string;
+  price: number;
+};
+/**
+ * A pet from the animal kingdom.
+ */
+export type Pet = {
+  /**
+   * The name of the pet as given by the owner.
+   */
+  name: string;
+  age: number;
+  species: string;
+};
+
+export const Schema: OneSchema<Endpoints> = {
+  Resources: {
+    Fruit: {
+      type: "object",
+      additionalProperties: false,
+      required: ["name", "price"],
+      properties: { name: { type: "string" }, price: { type: "number" } },
+    },
+    Pet: {
+      type: "object",
+      description: "A pet from the animal kingdom.",
+      additionalProperties: false,
+      required: ["name", "age", "species"],
+      properties: {
+        name: {
+          type: "string",
+          description: "The name of the pet as given by the owner.",
+        },
+        age: { type: "number" },
+        species: { type: "string" },
+      },
+    },
+  },
+  Endpoints: {
+    "GET /fruits": {
+      Name: "getPosts",
+      Request: {},
+      Response: { type: "array", items: { $ref: "#/definitions/Fruit" } },
+    },
+  },
+};
+`,
+    },
   ];
 
   FIXTURES.forEach(({ input, expected }, idx) => {
