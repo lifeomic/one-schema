@@ -7417,7 +7417,7 @@ zod-validation-error@^0.3.0:
   resolved "https://registry.yarnpkg.com/zod-validation-error/-/zod-validation-error-0.3.0.tgz#59118411ce24780e7a0380e89945b147cb8fe877"
   integrity sha512-M0g8+1fgEgz6do82lA90v1IA4WXOK7TxAHqohAPktNJbTacl7tI74JS38AUWJPIJgDjUkhtEuLkUUFl3uhneyA==
 
-zod@^3.20.2:
-  version "3.20.2"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-3.20.2.tgz#068606642c8f51b3333981f91c0a8ab37dfc2807"
-  integrity sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==
+zod@^3.22.3:
+  version "3.22.3"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.22.3.tgz#2fbc96118b174290d94e8896371c95629e87a060"
+  integrity sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==
