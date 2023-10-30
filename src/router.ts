@@ -72,6 +72,19 @@ export class OneSchemaRouter<
     return new OneSchemaRouter({}, config);
   }
 
+  /**
+   * Declare a set of new routes.
+   */
+  declareSchema<NewSchema extends ZodSchema>(
+    schema: NewSchema,
+  ): OneSchemaRouter<Schema & NewSchema, R> {
+    for (const route in schema) {
+      // @ts-expect-error TS is not smart enough to know that this is afe.
+      this.declare({ ...schema[route], route });
+    }
+    return this as any;
+  }
+
   declare<
     Route extends RoughRoute,
     Name extends string,
@@ -192,7 +205,7 @@ export class OneSchemaRouter<
   }
 }
 
-const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
+export const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
   schema: Schema,
 ): OneSchemaDefinition => {
   const oneSchema: OneSchemaDefinition = { Endpoints: {} };
