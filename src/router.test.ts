@@ -5,18 +5,21 @@ import { format } from 'prettier';
 import Koa = require('koa');
 import Router = require('@koa/router');
 import bodyparser = require('koa-bodyparser');
-import { NamedClientFor, OneSchemaRouter } from './router';
+import { NamedClient, OneSchemaRouter, ZodSchema } from './router';
 import { z } from 'zod';
 import { generateAxiosClient } from './generate-axios-client';
+import { OneSchemaCompatRouter, createCompatRouter } from './compat-router';
 
 let server: Server | undefined = undefined;
 afterEach(() => {
   server?.close();
 });
 
-const setup = <T extends OneSchemaRouter<any, any>>(
-  expose: (router: OneSchemaRouter<{}, Router>) => T,
-): { client: AxiosInstance; typed: NamedClientFor<T> } => {
+const setup = <Schema extends ZodSchema>(
+  expose: (
+    router: OneSchemaRouter<{}, Router>,
+  ) => OneSchemaRouter<Schema, any> | OneSchemaCompatRouter<Schema, any>,
+): { client: AxiosInstance; typed: NamedClient<Schema> } => {
   const router = expose(
     OneSchemaRouter.create({ using: new Router(), introspection: undefined }),
   );
@@ -25,13 +28,12 @@ const setup = <T extends OneSchemaRouter<any, any>>(
 
   return {
     client,
-    // @ts-expect-error TS is too dumb to know that this is right.
     typed: router.client(client),
   };
 };
 
 const serve = (
-  router: OneSchemaRouter<{}, Router>,
+  router: OneSchemaRouter<any, any> | OneSchemaCompatRouter<any, any>,
 ): { client: AxiosInstance } => {
   server = new Koa().use(bodyparser()).use(router.middleware()).listen();
 
@@ -941,4 +943,45 @@ test('the client(...) helper', async () => {
   const postResponse = await client.createItem({ id: 'some-id' });
   expect(postResponse.status).toStrictEqual(200);
   expect(postResponse.data).toStrictEqual({ id: 'some-id' });
+});
+
+describe('compat router', () => {
+  test('get + post', async () => {
+    const { typed: client } = setup(() =>
+      createCompatRouter({ introspection: undefined, using: new Router() })
+        .post(
+          '/items',
+          {
+            name: 'createItem',
+            request: z.object({ id: z.string() }),
+            response: z.object({ id: z.string() }),
+          },
+          (ctx) => ({ id: ctx.request.body.id }),
+        )
+        .get(
+          '/items/:id',
+          {
+            name: 'getItemById',
+            request: z.object({
+              filter: z.string(),
+            }),
+            response: z.object({ id: z.string() }),
+          },
+          (ctx) => ({
+            id: ctx.params.id + ':' + ctx.request.query.filter,
+          }),
+        ),
+    );
+
+    const res1 = await client.createItem({ id: 'test-id' });
+    expect(res1.status).toStrictEqual(200);
+    expect(res1.data).toStrictEqual({ id: 'test-id' });
+
+    const res2 = await client.getItemById({
+      id: 'test-id',
+      filter: 'test-filter',
+    });
+    expect(res2.status).toStrictEqual(200);
+    expect(res2.data).toStrictEqual({ id: 'test-id:test-filter' });
+  });
 });

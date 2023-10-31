@@ -24,7 +24,7 @@ export type RouterEndpointDefinition<Name> = {
 type Method = 'GET' | 'DELETE' | 'PUT' | 'POST' | 'PATCH';
 type RoughRoute = `${Method} ${string}`;
 
-type ZodSchema = {
+export type ZodSchema = {
   [route: string]: RouterEndpointDefinition<string>;
 };
 
