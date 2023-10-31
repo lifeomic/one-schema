@@ -410,10 +410,11 @@ describe('output validation', () => {
             request: z.object({}),
             response: z.object({ message: z.string() }),
           })
-          .implement(`${method} /items`, () => ({
+          .implement(
+            `${method} /items`,
             // @ts-expect-error Intentionally writing incorrect TS here
-            message: 123,
-          })),
+            () => ({ message: 123 }),
+          ),
       );
 
       const { status } = await client.request({
@@ -506,6 +507,105 @@ describe('implementations', () => {
       expect(status).toStrictEqual(200);
       expect(data).toStrictEqual({ message: `${message}-response` });
     });
+  });
+});
+
+describe('using middleware', () => {
+  test('type errors are caught when using middleware', () => {
+    type CustomState = { message: string };
+
+    setup(() =>
+      OneSchemaRouter.create({
+        using: new Router<CustomState>(),
+        introspection: undefined,
+      })
+        .declare({
+          name: 'putItem',
+          route: 'PUT /items/:id',
+          request: z.object({ message: z.string() }),
+          response: z.object({ id: z.string(), message: z.string() }),
+        })
+        .implement(
+          'PUT /items/:id',
+          // @ts-expect-error
+          async (ctx, next) => {
+            ctx.state.message = ctx.request.body.message + '-response';
+            await next();
+          },
+          // We're leaving out the id value here, which should cause the TS error.
+          (ctx) => ({ message: ctx.state.message }),
+        )
+        .implement(
+          'PUT /items/:id',
+          async (ctx, next) => {
+            ctx.params.id;
+
+            ctx.request.body.message;
+
+            // @ts-expect-error The params should be well-typed.
+            ctx.params.bogus;
+
+            // @ts-expect-error The body should be well-typed.
+            ctx.request.body.bogus;
+
+            await next();
+          },
+          (ctx) => ({ id: 'test-id', message: ctx.state.message }),
+        )
+        .implement(
+          'PUT /items/:id',
+          (ctx, next) => {
+            // This call implicitly tests that `message` is a string.
+            ctx.state.message.endsWith('');
+
+            // @ts-expect-error The state should be well-typed.
+            ctx.state.bogus;
+
+            return next();
+          },
+          (ctx) => ({ id: 'test-id', message: ctx.state.message }),
+        ),
+    );
+  });
+
+  test('middlewares are actually executed', async () => {
+    const mock = jest.fn();
+    const { typed: client } = setup((router) =>
+      router
+        .declare({
+          name: 'putItem',
+          route: 'PUT /items/:id',
+          request: z.object({ message: z.string() }),
+          response: z.object({ id: z.string(), message: z.string() }),
+        })
+        .implement(
+          'PUT /items/:id',
+          async (ctx, next) => {
+            mock('middleware 1', ctx.state.message);
+            ctx.state.message = 'message 1';
+            await next();
+          },
+          (ctx, next) => {
+            mock('middleware 2', ctx.state.message);
+            ctx.state.message = 'message 2';
+            return next();
+          },
+          (ctx) => ({ id: ctx.params.id, message: ctx.state.message }),
+        ),
+    );
+
+    const { status, data } = await client.putItem({
+      id: 'test-id-bleh',
+      message: 'test-message',
+    });
+
+    expect(status).toStrictEqual(200);
+    expect(data).toStrictEqual({ id: 'test-id-bleh', message: 'message 2' });
+
+    expect(mock.mock.calls).toEqual([
+      ['middleware 1', undefined],
+      ['middleware 2', 'message 1'],
+    ]);
   });
 });
 
