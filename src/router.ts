@@ -99,17 +99,29 @@ export class OneSchemaRouter<
 
   implement<Route extends keyof Schema & string>(
     route: Route,
-    ...middlewares: [
-      ...OneSchemaRouterMiddleware<
-        ContextOfEndpoint<Route, z.output<Schema[Route]['request']>, R>
-      >[],
-      EndpointImplementation<
-        Route,
-        z.output<Schema[Route]['request']>,
-        z.infer<Schema[Route]['response']>,
-        R
-      >,
-    ]
+    ...middlewares:
+      | [
+          EndpointImplementation<
+            Route,
+            z.output<Schema[Route]['request']>,
+            z.infer<Schema[Route]['response']>,
+            R
+          >,
+        ]
+      | [
+          ...OneSchemaRouterMiddleware<
+            ContextOfEndpoint<Route, z.output<Schema[Route]['request']>, R>
+          >[],
+          OneSchemaRouterMiddleware<
+            ContextOfEndpoint<Route, z.output<Schema[Route]['request']>, R>
+          >[],
+          EndpointImplementation<
+            Route,
+            z.output<Schema[Route]['request']>,
+            z.infer<Schema[Route]['response']>,
+            R
+          >,
+        ]
   ): this {
     const endpoint = this.schema[route];
 
