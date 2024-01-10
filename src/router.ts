@@ -4,8 +4,10 @@ import { fromZodError } from 'zod-validation-error';
 import zodToJsonSchema from 'zod-to-json-schema';
 import compose = require('koa-compose');
 import {
+  ContextOfEndpoint,
   EndpointImplementation,
   implementRoute,
+  OneSchemaRouterMiddleware,
   PathParamsOf,
 } from './koa-utils';
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -97,14 +99,23 @@ export class OneSchemaRouter<
 
   implement<Route extends keyof Schema & string>(
     route: Route,
-    implementation: EndpointImplementation<
-      Route,
-      z.output<Schema[Route]['request']>,
-      z.infer<Schema[Route]['response']>,
-      R
-    >,
-  ) {
+    ...middlewares: [
+      ...OneSchemaRouterMiddleware<
+        ContextOfEndpoint<Route, z.output<Schema[Route]['request']>, R>
+      >[],
+      EndpointImplementation<
+        Route,
+        z.output<Schema[Route]['request']>,
+        z.infer<Schema[Route]['response']>,
+        R
+      >,
+    ]
+  ): this {
     const endpoint = this.schema[route];
+
+    const mws = middlewares.slice(0, -1) as any[];
+
+    const implementation = middlewares.at(-1) as any;
 
     implementRoute(
       route,
@@ -119,6 +130,8 @@ export class OneSchemaRouter<
         }
         return res.data;
       },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      mws,
       async (ctx) => {
         const result = await implementation(ctx);
         const res = endpoint.response.safeParse(result);

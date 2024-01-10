@@ -94,6 +94,11 @@ export type EndpointImplementation<
   context: ContextOfEndpoint<RouteName, Request, RouterType>,
 ) => Response | Promise<Response>;
 
+export type OneSchemaRouterMiddleware<Context> = (
+  context: Context,
+  next: () => Promise<any>,
+) => any | Promise<any>;
+
 export const implementRoute = <
   Route extends string,
   Request,
@@ -103,6 +108,9 @@ export const implementRoute = <
   route: Route,
   router: R,
   parse: (ctx: ContextOfEndpoint<Route, Request, R>, data: unknown) => Request,
+  middlewares: OneSchemaRouterMiddleware<
+    ContextOfEndpoint<Route, Request, R>
+  >[],
   implementation: EndpointImplementation<Route, Request, Response, R>,
 ) => {
   // Separate method and path. e.g. 'POST my/route' => ['POST', 'my/route']
@@ -163,19 +171,19 @@ export const implementRoute = <
   // Register the route + handler on the router.
   switch (method) {
     case 'POST':
-      router.post(path, handler);
+      router.post(path, ...middlewares, handler);
       break;
     case 'GET':
-      router.get(path, handler);
+      router.get(path, ...middlewares, handler);
       break;
     case 'PUT':
-      router.put(path, handler);
+      router.put(path, ...middlewares, handler);
       break;
     case 'PATCH':
-      router.patch(path, handler);
+      router.patch(path, ...middlewares, handler);
       break;
     case 'DELETE':
-      router.delete(path, handler);
+      router.delete(path, ...middlewares, handler);
       break;
     default:
       throw new Error(`Unsupported method detected: ${route}`);
