@@ -16,13 +16,12 @@ It contains newlines.
 describe('generate', () => {
   const generateAndFormat = (input: GenerateAxiosClientInput) =>
     generateAxiosClient(input).then((source) => ({
-      javascript: format(source.javascript, { parser: 'babel' }),
-      declaration: format(source.declaration, { parser: 'typescript' }),
+      typescript: format(source.typescript, { parser: 'typescript' }),
     }));
 
   const FIXTURES: {
     input: GenerateAxiosClientInput;
-    expected: { javascript: string; declaration: string };
+    expected: { typescript: string };
   }[] = [
     {
       input: {
@@ -70,79 +69,7 @@ describe('generate', () => {
         },
       },
       expected: {
-        javascript: `/* eslint-disable */
-
-const substituteParams = (url, params) =>
-  Object.entries(params).reduce(
-    (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
-    url
-  );
-
-const removePathParams = (url, params) =>
-  Object.entries(params)
-    .filter(([key, value]) => value !== undefined)
-    .reduce(
-      (accum, [name, value]) =>
-        url.includes(":" + name) ? accum : { ...accum, [name]: value },
-      {}
-    );
-
-const parseQueryParamsFromPagingLink = (link) => {
-  const params = new URLSearchParams(link.split("?")[1]);
-
-  return {
-    nextPageToken: params.get("nextPageToken"),
-    pageSize: params.get("pageSize"),
-  };
-};
-
-class Client {
-  constructor(client) {
-    this.client = client;
-  }
-
-  getPosts(data, config) {
-    return this.client.request({
-      ...config,
-      method: "GET",
-      params: removePathParams("/posts", data),
-      url: substituteParams("/posts", data),
-    });
-  }
-
-  putPost(data, config) {
-    return this.client.request({
-      ...config,
-      method: "PUT",
-      data: removePathParams("/posts/:id", data),
-      url: substituteParams("/posts/:id", data),
-    });
-  }
-
-  async paginate(request, data, config) {
-    const result = [];
-
-    let nextPageParams = {};
-    do {
-      const response = await this[request.name](
-        { ...nextPageParams, ...data },
-        config
-      );
-
-      result.push(...response.data.items);
-
-      nextPageParams = response.data.links.next
-        ? parseQueryParamsFromPagingLink(response.data.links.next)
-        : {};
-    } while (!!nextPageParams.nextPageToken);
-
-    return result;
-  }
-}
-
-module.exports.Client = Client;
-`,
-        declaration: `/* eslint-disable */
+        typescript: `/* eslint-disable */
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
 export type Endpoints = {
@@ -176,8 +103,38 @@ export type Endpoints = {
   };
 };
 
-export declare class Client {
-  constructor(client: AxiosInstance);
+/* eslint-disable */
+
+const substituteParams = (url: string, params: Object) =>
+  Object.entries(params).reduce(
+    (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
+    url
+  );
+
+const removePathParams = (url: string, params: Object) =>
+  Object.entries(params)
+    .filter(([key, value]) => value !== undefined)
+    .reduce(
+      (accum, [name, value]) =>
+        url.includes(":" + name) ? accum : { ...accum, [name]: value },
+      {}
+    );
+
+const parseQueryParamsFromPagingLink = (link: string) => {
+  const params = new URLSearchParams(link.split("?")[1]);
+
+  return {
+    nextPageToken: params.get("nextPageToken"),
+    pageSize: params.get("pageSize"),
+  };
+};
+
+export class Client {
+  client: AxiosInstance;
+
+  constructor(client: AxiosInstance) {
+    this.client = client;
+  }
 
   /**
    * Executes the \`GET /posts\` endpoint.
@@ -191,7 +148,14 @@ export declare class Client {
     data: Endpoints["GET /posts"]["Request"] &
       Endpoints["GET /posts"]["PathParams"],
     config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<Endpoints["GET /posts"]["Response"]>>;
+  ): Promise<AxiosResponse<Endpoints["GET /posts"]["Response"]>> {
+    return this.client.request({
+      ...config,
+      method: "GET",
+      params: removePathParams("/posts", data),
+      url: substituteParams("/posts", data),
+    });
+  }
 
   /**
    * This is a long description about a field. It contains lots of very long text. Sometimes the text might be over the desired line length.
@@ -209,14 +173,21 @@ export declare class Client {
     data: Endpoints["PUT /posts/:id"]["Request"] &
       Endpoints["PUT /posts/:id"]["PathParams"],
     config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<Endpoints["PUT /posts/:id"]["Response"]>>;
+  ): Promise<AxiosResponse<Endpoints["PUT /posts/:id"]["Response"]>> {
+    return this.client.request({
+      ...config,
+      method: "PUT",
+      data: removePathParams("/posts/:id", data),
+      url: substituteParams("/posts/:id", data),
+    });
+  }
 
   /**
    * Paginates exhaustively through the provided \`request\`, using the specified
    * \`data\`. A \`pageSize\` can be specified in the \`data\` to customize the
    * page size for pagination.
    */
-  paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
+  async paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
     request: (
       data: T,
       config?: AxiosRequestConfig
@@ -225,8 +196,30 @@ export declare class Client {
     >,
     data: T,
     config?: AxiosRequestConfig
-  ): Promise<Item[]>;
+  ): Promise<Item[]> {
+    const result = [];
+
+    let nextPageParams = {};
+    do {
+      // @ts-expect-error
+      const response = await this[request.name](
+        { ...nextPageParams, ...data },
+        config
+      );
+
+      result.push(...response.data.items);
+
+      nextPageParams = response.data.links.next
+        ? parseQueryParamsFromPagingLink(response.data.links.next)
+        : {};
+      // @ts-expect-error
+    } while (!!nextPageParams.nextPageToken);
+
+    return result;
+  }
 }
+
+module.exports.Client = Client;
 `,
       },
     },
@@ -235,11 +228,9 @@ export declare class Client {
   FIXTURES.forEach(({ input, expected }, idx) => {
     test(`fixture ${idx}`, async () => {
       const result = await generateAndFormat(input);
-      expect(result.javascript).toStrictEqual(expected.javascript);
-      expect(result.declaration).toStrictEqual(expected.declaration);
+      expect(result.typescript).toStrictEqual(expected.typescript);
 
-      writeFileSync(`${__dirname}/test-generated.js`, result.javascript);
-      writeFileSync(`${__dirname}/test-generated.d.ts`, result.declaration);
+      writeFileSync(`${__dirname}/test-generated.ts`, result.typescript);
     });
   });
 });

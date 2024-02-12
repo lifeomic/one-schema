@@ -125,16 +125,9 @@ const program = yargs(process.argv.slice(2))
         outputClass: argv.name,
       });
 
-      writeGeneratedFile(argv.output.replace('.ts', '.js'), output.javascript, {
+      writeGeneratedFile(argv.output, output.typescript, {
         format: argv.format,
       });
-      writeGeneratedFile(
-        argv.output.replace('.ts', '.d.ts'),
-        output.declaration,
-        {
-          format: argv.format,
-        },
-      );
     },
   )
   .command(
