@@ -1,4 +1,4 @@
-import { OneSchemaDefinition } from '.';
+import { EndpointDefinition, OneSchemaDefinition } from '.';
 import { generateEndpointTypes } from './generate-endpoints';
 import { validateSchema } from './meta-schema';
 
@@ -8,8 +8,7 @@ export type GenerateAxiosClientInput = {
 };
 
 export type GenerateAxiosClientOutput = {
-  javascript: string;
-  declaration: string;
+  typescript: string;
 };
 
 const toJSDocLines = (docs: string): string =>
@@ -26,6 +25,27 @@ const PAGINATE_JSDOC = `
  */
 `.trim();
 
+const generateEndpointHelper = ([endpoint, { Name, Description }]: [
+  string,
+  EndpointDefinition,
+]) => {
+  return {
+    jsdoc: `/**
+     ${toJSDocLines(Description || `Executes the \`${endpoint}\` endpoint.`)}
+     *
+     * @param data The request data.
+     * @param config The Axios request overrides for the request.
+     *
+     * @returns An AxiosResponse object representing the response.
+     */`,
+    declaration: `${Name}(
+      data: Endpoints['${endpoint}']['Request'] &
+        Endpoints['${endpoint}']['PathParams'],
+      config?: AxiosRequestConfig
+    ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>>`,
+  };
+};
+
 export const generateAxiosClient = async ({
   spec,
   outputClass,
@@ -37,56 +57,20 @@ export const generateAxiosClient = async ({
     "import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';",
     '',
     await generateEndpointTypes(spec),
-    `
-export declare class ${outputClass} {
-
-  constructor(client: AxiosInstance);
-
-  ${Object.entries(spec.Endpoints)
-    .map(([endpoint, { Name, Description }]) => {
-      return `
-        /**
-         ${toJSDocLines(
-           Description || `Executes the \`${endpoint}\` endpoint.`,
-         )}
-         *
-         * @param data The request data.
-         * @param config The Axios request overrides for the request.
-         *
-         * @returns An AxiosResponse object representing the response.
-         */
-        ${Name}(
-          data: Endpoints['${endpoint}']['Request'] &
-            Endpoints['${endpoint}']['PathParams'],
-          config?: AxiosRequestConfig
-        ): Promise<AxiosResponse<Endpoints['${endpoint}']['Response']>>`;
-    })
-    .join('\n\n')}
-
-  ${PAGINATE_JSDOC}
-  paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
-    request: (
-      data: T,
-      config?: AxiosRequestConfig
-    ) => Promise<
-      AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
-    >,
-    data: T,
-    config?: AxiosRequestConfig
-  ): Promise<Item[]>;
-}`.trim(),
   ].join('\n');
 
-  const javascript = `
+  const typescript = `
+${declaration}
+
 /* eslint-disable */
 
-const substituteParams = (url, params) =>
+const substituteParams = (url: string, params: Object) =>
   Object.entries(params).reduce(
     (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
     url
   );
 
-const removePathParams = (url, params) => 
+const removePathParams = (url: string, params: Object) =>
   Object.entries(params)
     .filter(([key, value]) => value !== undefined)
     .reduce(
@@ -95,7 +79,7 @@ const removePathParams = (url, params) =>
       {}
     );
 
-const parseQueryParamsFromPagingLink = (link) => {
+const parseQueryParamsFromPagingLink = (link: string) => {
   const params = new URLSearchParams(link.split('?')[1]);
 
   return {
@@ -104,18 +88,23 @@ const parseQueryParamsFromPagingLink = (link) => {
   };
 };
 
-class ${outputClass} {
+export class ${outputClass} {
+  client: AxiosInstance;
 
-  constructor(client) {
+  constructor(client: AxiosInstance) {
     this.client = client;
   }
 
   ${Object.entries(spec.Endpoints)
-    .map(([endpoint, { Name }]) => {
+    .map((entry) => {
+      const [endpoint] = entry;
       const [method, url] = endpoint.split(' ');
       const useQueryParams = ['GET', 'DELETE'].includes(method);
+      const { jsdoc, declaration } = generateEndpointHelper(entry);
+
       return `
-        ${Name}(data, config) {
+       ${jsdoc}
+       ${declaration}{
           return this.client.request({
             ...config,
             method: '${method}',
@@ -131,11 +120,22 @@ class ${outputClass} {
     })
     .join('\n\n')}
 
-  async paginate(request, data, config) {
+  ${PAGINATE_JSDOC}
+  async paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
+    request: (
+      data: T,
+      config?: AxiosRequestConfig,
+    ) => Promise<
+      AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
+    >,
+    data: T,
+    config?: AxiosRequestConfig
+  ): Promise<Item[]> {
     const result = [];
 
     let nextPageParams = {};
     do {
+      // @ts-expect-error
       const response = await this[request.name](
         { ...nextPageParams, ...data },
         config
@@ -146,6 +146,7 @@ class ${outputClass} {
       nextPageParams = response.data.links.next
         ? parseQueryParamsFromPagingLink(response.data.links.next)
         : {};
+      // @ts-expect-error
     } while (!!nextPageParams.nextPageToken);
 
     return result;
@@ -153,10 +154,9 @@ class ${outputClass} {
 }
 
 module.exports.${outputClass} = ${outputClass};
-  `.trim();
+`.trim();
 
   return {
-    javascript,
-    declaration,
+    typescript,
   };
 };

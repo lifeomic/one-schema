@@ -564,7 +564,7 @@ describe('introspection', () => {
       outputClass: 'Client',
     });
 
-    const formattedDeclaration = format(clientCode.declaration, {
+    const formattedDeclaration = format(clientCode.typescript, {
       parser: 'typescript',
     });
 

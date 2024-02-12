@@ -13,8 +13,7 @@ const testGeneratedFile = (ext: string) => `${__dirname}/test-generated${ext}`;
 
 const generateAndFormat = (input: GenerateAxiosClientInput) =>
   generateAxiosClient(input).then((source) => ({
-    javascript: format(source.javascript, { parser: 'babel' }),
-    declaration: format(source.declaration, { parser: 'typescript' }),
+    typescript: format(source.typescript, { parser: 'typescript' }),
   }));
 
 const mockMiddleware = jest.fn();
@@ -122,10 +121,9 @@ beforeEach(async () => {
 
   const output = await generateAndFormat({ spec, outputClass: 'Service' });
 
-  writeFileSync(testGeneratedFile('.js'), output.javascript);
-  writeFileSync(testGeneratedFile('.d.ts'), output.declaration);
+  writeFileSync(testGeneratedFile('.ts'), output.typescript);
 
-  const { Service } = await import(testGeneratedFile('.js'));
+  const { Service } = await import(testGeneratedFile('.ts'));
   client = new Service(context.client);
 });
 
