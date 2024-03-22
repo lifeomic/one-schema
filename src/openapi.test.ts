@@ -313,4 +313,134 @@ describe('toOpenAPISpec', () => {
       },
     });
   });
+  test("handles spec with 'allOf' query parameters", () => {
+    const spec: OneSchemaDefinition = withAssumptions(
+      {
+        Resources: {
+          Post: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              message: { type: 'string' },
+            },
+          },
+        },
+        Endpoints: {
+          'GET /posts/:id': {
+            Name: 'getPostByIdWithParams',
+            Request: {
+              allOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    project: {
+                      type: 'string',
+                    },
+                  },
+                  required: ['project'],
+                },
+                {
+                  type: 'object',
+                  properties: {
+                    count: {
+                      type: 'string',
+                    },
+                  },
+                },
+                {
+                  type: 'string', // handles a code coverage for a non-object allOf entry
+                },
+              ],
+            },
+            Response: {
+              $ref: '#/definitions/Post',
+            },
+          },
+        },
+      },
+      {
+        objectPropertiesRequiredByDefault: false,
+        noAdditionalPropertiesOnObjects: true,
+      },
+    );
+    const result = toOpenAPISpec(spec, {
+      info: { title: 'test title', version: '1.2.3' },
+    });
+
+    // Ensure result is a valid OpenAPI spec
+    const { errors } = new OpenAPIValidator({
+      version: '3.0.0',
+    }).validate(result);
+
+    expect(errors).toHaveLength(0);
+
+    expect(result).toStrictEqual({
+      openapi: '3.0.0',
+      info: {
+        title: 'test title',
+        version: '1.2.3',
+      },
+      components: {
+        schemas: {
+          Post: {
+            additionalProperties: false,
+            properties: {
+              id: {
+                type: 'number',
+              },
+              message: {
+                type: 'string',
+              },
+            },
+            type: 'object',
+          },
+        },
+      },
+      paths: {
+        '/posts/{id}': {
+          get: {
+            operationId: 'getPostByIdWithParams',
+            parameters: [
+              {
+                in: 'path',
+                name: 'id',
+                required: true,
+                schema: {
+                  type: 'string',
+                },
+              },
+              {
+                in: 'query',
+                name: 'project',
+                required: true,
+                schema: {
+                  type: 'string',
+                },
+              },
+              {
+                in: 'query',
+                name: 'count',
+                required: false,
+                schema: {
+                  type: 'string',
+                },
+              },
+            ],
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/Post',
+                    },
+                  },
+                },
+                description: 'A successful response',
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 });

@@ -2,6 +2,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 import type { OneSchemaDefinition } from './types';
 import { deepCopy } from './generate-endpoints';
 import { validateSchema } from './meta-schema';
+import { JSONSchema4 } from 'json-schema';
 
 /**
  * Converts e.g. `/users/:id/profile` to `/users/{id}/profile`.
@@ -17,6 +18,18 @@ const getPathParameters = (koaPath: string) =>
     .split('/')
     .filter((part) => part.startsWith(':'))
     .map((part) => part.slice(1));
+
+const toQueryParam = (
+  item: JSONSchema4,
+  name: string,
+  schema: JSONSchema4,
+) => ({
+  in: 'query',
+  name,
+  description: schema.description,
+  schema: schema,
+  required: Array.isArray(item.required) && item.required.includes(name),
+});
 
 export const toOpenAPISpec = (
   schema: OneSchemaDefinition,
@@ -82,19 +95,21 @@ export const toOpenAPISpec = (
     if (Request) {
       if (['GET', 'DELETE'].includes(method)) {
         // Add the query parameters for GET/DELETE methods
-        for (const [name, schema] of Object.entries(Request.properties ?? {}))
-          parameters.push({
-            in: 'query',
-            name,
-            description: schema.description,
+        for (const [name, schema] of Object.entries(Request.properties ?? {})) {
+          // @ts-expect-error TS detects a mismatch between the JSONSchema types
+          // between openapi-types and json-schema. Ignore and assume everything
+          // is cool.
+          parameters.push(toQueryParam(Request, name, schema));
+        }
+
+        for (const item of Request.allOf ?? []) {
+          for (const [name, schema] of Object.entries(item.properties ?? {})) {
             // @ts-expect-error TS detects a mismatch between the JSONSchema types
             // between openapi-types and json-schema. Ignore and assume everything
             // is cool.
-            schema: schema,
-            required:
-              Array.isArray(Request.required) &&
-              Request.required.includes(name),
-          });
+            parameters.push(toQueryParam(item, name, schema));
+          }
+        }
       } else {
         // Add the body spec parameters for non-GET/DELETE methods
         operation.requestBody = {
