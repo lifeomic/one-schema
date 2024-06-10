@@ -120,6 +120,7 @@ export class OneSchemaRouter<
         return res.data;
       },
       async (ctx) => {
+        ctx.state.endpointName = endpoint.name;
         const result = await implementation(ctx);
         const res = endpoint.response.safeParse(result);
         if (!res.success) {
