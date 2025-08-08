@@ -1,20 +1,9 @@
-import { execSync } from 'child_process';
+import { describe, expect, it, test } from 'vitest';
 import { readFileSync, writeFileSync } from 'fs';
 import { tmpNameSync } from 'tmp';
 import { OneSchemaDefinition } from '../types';
 import * as yaml from 'js-yaml';
-
-const executeCLI = (command: string): string => {
-  try {
-    return execSync(`ts-node cli.ts ${command}`, {
-      cwd: __dirname,
-      encoding: 'utf-8',
-      stdio: 'pipe',
-    });
-  } catch (err) {
-    return err.stderr.toString();
-  }
-};
+import { createProgram } from './cli';
 
 /**
  * Writes the `schema`, and returns its filepath.
@@ -25,7 +14,7 @@ const writeSchema = (schema: OneSchemaDefinition): string => {
   return path;
 };
 
-describe('schema validation snapshots', () => {
+describe('schema validation errors', () => {
   const SCENARIOS: {
     test: string;
     schema: string;
@@ -34,64 +23,80 @@ describe('schema validation snapshots', () => {
     {
       test: 'malformed yaml',
       schema: '-this is:bad',
-      expectOutputContaining:
-        'Error: Detected invalid schema: data must be object',
+      expectOutputContaining: 'Detected invalid schema: data must be object',
     },
   ];
 
   SCENARIOS.forEach(({ test: name, schema, expectOutputContaining }) => {
-    test(`${name}`, () => {
+    test(`${name}`, async () => {
       const filepath = tmpNameSync();
 
       writeFileSync(filepath, schema.trim(), { encoding: 'utf-8' });
 
-      const result = executeCLI(
-        `generate-api-types --schema ${filepath} --output ${tmpNameSync()}`,
-      );
-
-      expect(result).toContain(expectOutputContaining);
+      await expect(
+        createProgram([
+          'generate-api-types',
+          '--schema',
+          filepath,
+          '--output',
+          tmpNameSync(),
+        ]).parseAsync(),
+      ).rejects.toThrow(expectOutputContaining);
     });
   });
 });
 
-describe('input validation snapshots', () => {
-  const SCENARIOS: { test: string; input: string }[] = [
+describe('input validation errors', () => {
+  const SCENARIOS: {
+    test: string;
+    input: string;
+    expectOutputContaining: string;
+  }[] = [
     {
       test: 'empty input',
       input: '',
+      expectOutputContaining: 'Unknown argument: ""',
     },
     {
       test: 'bogus command name',
       input: 'generate-bogus',
+      expectOutputContaining: 'Unknown argument: generate-bogus',
     },
     {
       test: 'missing arguments - generate-axios-client',
       input: 'generate-axios-client',
+      expectOutputContaining:
+        'Missing required arguments: schema, output, name',
     },
     {
       test: 'missing arguments - generate-api-types',
       input: 'generate-api-types',
+      expectOutputContaining: 'Missing required arguments: schema, output',
     },
     {
       test: 'missing arguments - generate-open-api-spec',
       input: 'generate-open-api-spec',
+      expectOutputContaining:
+        'Missing required arguments: schema, output, apiTitle',
     },
     {
       test: 'missing arguments - fetch-remote-schema',
       input: 'fetch-remote-schema',
+      expectOutputContaining: 'Missing required arguments: from, output',
     },
   ];
 
-  SCENARIOS.forEach(({ test: name, input }) => {
+  SCENARIOS.forEach(({ test: name, input, expectOutputContaining }) => {
     test(`${name}`, () => {
-      const result = executeCLI(input);
-      expect(result.trim()).toMatchSnapshot();
+      expect(() => createProgram([input]).parse()).toThrow(
+        expectOutputContaining,
+      );
     });
   });
 });
 
 describe('generate-open-api-spec', () => {
-  it('does not create new newlines when serializing + deserializing to YAML', () => {
+  it('does not create new newlines when serializing + deserializing to YAML', async () => {
     const description =
       'This is a long description that might go over the js-yaml default line length.\nIt also contains newlines.\n\nLots of newlines!';
 
@@ -109,9 +114,15 @@ describe('generate-open-api-spec', () => {
 
     const output = `${__dirname}/../test-generated.yaml`;
 
-    executeCLI(
-      `generate-open-api-spec --schema '${path}' --output '${output}' --apiTitle 'test title'`,
-    );
+    await createProgram([
+      'generate-open-api-spec',
+      '--schema',
+      path,
+      '--output',
+      output,
+      '--apiTitle',
+      'test title',
+    ]).parseAsync();
 
     const yamlContent = readFileSync(output, { encoding: 'utf8' });
 

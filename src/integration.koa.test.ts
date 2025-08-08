@@ -1,3 +1,4 @@
+import { expect, test } from 'vitest';
 import axios, { AxiosInstance } from 'axios';
 import Koa = require('koa');
 import Router = require('@koa/router');

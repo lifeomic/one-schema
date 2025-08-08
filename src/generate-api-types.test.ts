@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import { format } from 'prettier';
 import { generateAPITypes, GenerateAPITypesInput } from './generate-api-types';
 
@@ -238,7 +239,7 @@ export const Schema: OneSchema<Endpoints> = {
     test(`fixture ${idx}`, async () => {
       const result = await generateAPITypes(input);
 
-      const formatted = format(result, { parser: 'typescript' });
+      const formatted = await format(result, { parser: 'typescript' });
 
       expect(formatted).toStrictEqual(expected);
     });

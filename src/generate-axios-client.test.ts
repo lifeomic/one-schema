@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import {
   generateAxiosClient,
   GenerateAxiosClientInput,
@@ -14,10 +15,12 @@ It contains newlines.
 `.trim();
 
 describe('generate', () => {
-  const generateAndFormat = (input: GenerateAxiosClientInput) =>
-    generateAxiosClient(input).then((source) => ({
-      typescript: format(source.typescript, { parser: 'typescript' }),
-    }));
+  const generateAndFormat = async (input: GenerateAxiosClientInput) => {
+    const source = await generateAxiosClient(input);
+    return {
+      typescript: await format(source.typescript, { parser: 'typescript' }),
+    };
+  };
 
   const FIXTURES: {
     input: GenerateAxiosClientInput;
@@ -108,7 +111,7 @@ export type Endpoints = {
 const substituteParams = (url: string, params: Object) =>
   Object.entries(params).reduce(
     (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
-    url
+    url,
   );
 
 const removePathParams = (url: string, params: Object) =>
@@ -117,7 +120,7 @@ const removePathParams = (url: string, params: Object) =>
     .reduce(
       (accum, [name, value]) =>
         url.includes(":" + name) ? accum : { ...accum, [name]: value },
-      {}
+      {},
     );
 
 const parseQueryParamsFromPagingLink = (link: string) => {
@@ -147,7 +150,7 @@ export class Client {
   getPosts(
     data: Endpoints["GET /posts"]["Request"] &
       Endpoints["GET /posts"]["PathParams"],
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<Endpoints["GET /posts"]["Response"]>> {
     return this.client.request({
       ...config,
@@ -172,7 +175,7 @@ export class Client {
   putPost(
     data: Endpoints["PUT /posts/:id"]["Request"] &
       Endpoints["PUT /posts/:id"]["PathParams"],
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<Endpoints["PUT /posts/:id"]["Response"]>> {
     return this.client.request({
       ...config,
@@ -190,12 +193,12 @@ export class Client {
   async paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
     request: (
       data: T,
-      config?: AxiosRequestConfig
+      config?: AxiosRequestConfig,
     ) => Promise<
       AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
     >,
     data: T,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<Item[]> {
     const result = [];
 
@@ -204,7 +207,7 @@ export class Client {
       // @ts-expect-error
       const response = await this[request.name](
         { ...nextPageParams, ...data },
-        config
+        config,
       );
 
       result.push(...response.data.items);

@@ -125,7 +125,7 @@ export const implementSchema = <
       router,
       (ctx, data) => {
         const requestSchema = schema.Endpoints[endpoint].Request;
-        /* istanbul ignore next */
+        /* v8 ignore next 3 */
         if (!requestSchema) {
           return data;
         }

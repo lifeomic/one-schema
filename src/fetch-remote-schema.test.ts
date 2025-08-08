@@ -1,8 +1,9 @@
+import { expect, test, vi } from 'vitest';
 import { Alpha } from '@lifeomic/alpha';
 import { fetchRemoteSchema } from './fetch-remote-schema';
 
 test('fetchRemoteSchema calls the provided url', async () => {
-  const getSpy = jest.spyOn(Alpha.prototype, 'get').mockResolvedValue({
+  const getSpy = vi.spyOn(Alpha.prototype, 'get').mockResolvedValue({
     data: { mockResult: 'mockValue' },
   });
 

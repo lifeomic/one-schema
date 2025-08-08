@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import { JSONSchema4 } from 'json-schema';
 import { transformJSONSchema } from './json-schema';
 

@@ -173,7 +173,6 @@ export const withAssumptions = (
         schema.type === 'object' && schema.properties
           ? {
               required: Object.keys(schema.properties).filter(
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 (name) => schema.properties![name].optional !== true,
               ),
               ...schema,

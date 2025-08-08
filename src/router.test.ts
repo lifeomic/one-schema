@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, it, test } from 'vitest';
 import axios, { AxiosInstance } from 'axios';
 import { Server } from 'http';
 import { v4 as uuid } from 'uuid';
@@ -343,7 +344,7 @@ describe('input validation', () => {
 
       expect(status).toStrictEqual(400);
       expect(data).toStrictEqual(
-        'The request input did not conform to the required schema: Required at "message"',
+        'The request input did not conform to the required schema: Invalid input: expected string, received undefined at "message"',
       );
     });
   });
@@ -369,7 +370,7 @@ describe('input validation', () => {
 
       expect(status).toStrictEqual(400);
       expect(data).toStrictEqual(
-        'The request input did not conform to the required schema: Required at "message"',
+        'The request input did not conform to the required schema: Invalid input: expected string, received undefined at "message"',
       );
     });
   });
@@ -394,7 +395,7 @@ describe('input validation', () => {
 
     expect(status).toStrictEqual(400);
     expect(data).toStrictEqual(
-      'The request input did not conform to the required schema: Required at "message"; Required at "private"',
+      'The request input did not conform to the required schema: Invalid input: expected string, received undefined at "message"; Invalid input: expected boolean, received undefined at "private"',
     );
   });
 });
@@ -564,7 +565,7 @@ describe('introspection', () => {
       outputClass: 'Client',
     });
 
-    const formattedDeclaration = format(clientCode.typescript, {
+    const formattedDeclaration = await format(clientCode.typescript, {
       parser: 'typescript',
     });
 

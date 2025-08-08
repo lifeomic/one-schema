@@ -1,11 +1,11 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`introspection introspecting + generating a client 1`] = `
+exports[`introspection > introspecting + generating a client 1`] = `
 "/* eslint-disable */
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from \\"axios\\";
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
 export type Endpoints = {
-  \\"POST /items\\": {
+  "POST /items": {
     Request: {
       message: string;
     };
@@ -15,7 +15,7 @@ export type Endpoints = {
       message: string;
     };
   };
-  \\"GET /items/:id\\": {
+  "GET /items/:id": {
     Request: {
       filter: string;
     };
@@ -33,8 +33,8 @@ export type Endpoints = {
 
 const substituteParams = (url: string, params: Object) =>
   Object.entries(params).reduce(
-    (url, [name, value]) => url.replace(\\":\\" + name, encodeURIComponent(value)),
-    url
+    (url, [name, value]) => url.replace(":" + name, encodeURIComponent(value)),
+    url,
   );
 
 const removePathParams = (url: string, params: Object) =>
@@ -42,16 +42,16 @@ const removePathParams = (url: string, params: Object) =>
     .filter(([key, value]) => value !== undefined)
     .reduce(
       (accum, [name, value]) =>
-        url.includes(\\":\\" + name) ? accum : { ...accum, [name]: value },
-      {}
+        url.includes(":" + name) ? accum : { ...accum, [name]: value },
+      {},
     );
 
 const parseQueryParamsFromPagingLink = (link: string) => {
-  const params = new URLSearchParams(link.split(\\"?\\")[1]);
+  const params = new URLSearchParams(link.split("?")[1]);
 
   return {
-    nextPageToken: params.get(\\"nextPageToken\\"),
-    pageSize: params.get(\\"pageSize\\"),
+    nextPageToken: params.get("nextPageToken"),
+    pageSize: params.get("pageSize"),
   };
 };
 
@@ -71,15 +71,15 @@ export class Client {
    * @returns An AxiosResponse object representing the response.
    */
   createItem(
-    data: Endpoints[\\"POST /items\\"][\\"Request\\"] &
-      Endpoints[\\"POST /items\\"][\\"PathParams\\"],
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<Endpoints[\\"POST /items\\"][\\"Response\\"]>> {
+    data: Endpoints["POST /items"]["Request"] &
+      Endpoints["POST /items"]["PathParams"],
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<Endpoints["POST /items"]["Response"]>> {
     return this.client.request({
       ...config,
-      method: \\"POST\\",
-      data: removePathParams(\\"/items\\", data),
-      url: substituteParams(\\"/items\\", data),
+      method: "POST",
+      data: removePathParams("/items", data),
+      url: substituteParams("/items", data),
     });
   }
 
@@ -92,15 +92,15 @@ export class Client {
    * @returns An AxiosResponse object representing the response.
    */
   getItem(
-    data: Endpoints[\\"GET /items/:id\\"][\\"Request\\"] &
-      Endpoints[\\"GET /items/:id\\"][\\"PathParams\\"],
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<Endpoints[\\"GET /items/:id\\"][\\"Response\\"]>> {
+    data: Endpoints["GET /items/:id"]["Request"] &
+      Endpoints["GET /items/:id"]["PathParams"],
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<Endpoints["GET /items/:id"]["Response"]>> {
     return this.client.request({
       ...config,
-      method: \\"GET\\",
-      params: removePathParams(\\"/items/:id\\", data),
-      url: substituteParams(\\"/items/:id\\", data),
+      method: "GET",
+      params: removePathParams("/items/:id", data),
+      url: substituteParams("/items/:id", data),
     });
   }
 
@@ -112,12 +112,12 @@ export class Client {
   async paginate<T extends { nextPageToken?: string; pageSize?: string }, Item>(
     request: (
       data: T,
-      config?: AxiosRequestConfig
+      config?: AxiosRequestConfig,
     ) => Promise<
       AxiosResponse<{ items: Item[]; links: { self: string; next?: string } }>
     >,
     data: T,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<Item[]> {
     const result = [];
 
@@ -126,7 +126,7 @@ export class Client {
       // @ts-expect-error
       const response = await this[request.name](
         { ...nextPageParams, ...data },
-        config
+        config,
       );
 
       result.push(...response.data.items);

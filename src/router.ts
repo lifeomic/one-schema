@@ -1,7 +1,6 @@
 import Router from '@koa/router';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-import zodToJsonSchema from 'zod-to-json-schema';
 import compose = require('koa-compose');
 import {
   EndpointImplementation,
@@ -38,12 +37,10 @@ export type NamedClient<Schema extends ZodSchema> = {
   ) => Promise<AxiosResponse<z.infer<Schema[Route]['response']>>>;
 };
 
-export type NamedClientFor<Router> = Router extends OneSchemaRouter<
-  infer Schema,
-  any
->
-  ? NamedClient<Schema>
-  : never;
+export type NamedClientFor<Router> =
+  Router extends OneSchemaRouter<infer Schema, any>
+    ? NamedClient<Schema>
+    : never;
 
 export class OneSchemaRouter<
   Schema extends ZodSchema,
@@ -157,7 +154,6 @@ export class OneSchemaRouter<
     const substituteParams = (path: string, payload: Record<string, any>) =>
       Object.entries(payload).reduce(
         (path, [name, value]) =>
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           path.replace(':' + name, encodeURIComponent(value)),
         path,
       );
@@ -176,13 +172,10 @@ export class OneSchemaRouter<
       client[endpoint.name] = (payload: any, config?: AxiosRequestConfig) => {
         return axios.request({
           method,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           url: substituteParams(path, payload),
           ...(['GET', 'DELETE'].includes(method)
-            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              { params: removePathParams(path, payload) }
-            : // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              { data: removePathParams(path, payload) }),
+            ? { params: removePathParams(path, payload) }
+            : { data: removePathParams(path, payload) }),
           ...config,
         });
       };
@@ -192,7 +185,7 @@ export class OneSchemaRouter<
   }
 }
 
-const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
+export const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
   schema: Schema,
 ): OneSchemaDefinition => {
   const oneSchema: OneSchemaDefinition = { Endpoints: {} };
@@ -203,13 +196,9 @@ const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
       Description: definition.description,
       // The JSONSchema types are very slightly different between packages. We just
       // trust that the interop will work fine, and use "as any" here.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      Request: zodToJsonSchema(definition.request, {
-        $refStrategy: 'none',
-      }) as any,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      Response: zodToJsonSchema(definition.response, {
-        $refStrategy: 'none',
+      Request: z.toJSONSchema(definition.request, { target: 'draft-7' }) as any,
+      Response: z.toJSONSchema(definition.response, {
+        target: 'draft-7',
       }) as any,
     };
   }
