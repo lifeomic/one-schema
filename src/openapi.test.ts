@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import OpenAPIValidator from 'openapi-schema-validator';
 import { withAssumptions } from './meta-schema';
 import { toOpenAPISpec } from './openapi';

@@ -2,9 +2,12 @@ Build end-to-end typesafe REST APIs using TypeScript.
 
 ## Getting Started
 
+```shell
+yarn add @lifeomic/one-schema @koa/router axios zod
 ```
-yarn add @lifeomic/one-schema
-```
+
+**Note**: The `@koa/router`, `axios`, and `zod` packages are peer dependencies of
+`@lifeomic/one-schema` and must be installed separately.
 
 ## Usage
 
@@ -97,6 +100,33 @@ router
 ```
 
 ### Generating Type-Safe Clients
+
+#### From the Same Project
+
+Generating a type-safe client for use in the same project the API was defined in is straightforward, using `OneSchemaRouter.client(axios: AxiosInstance)`.
+
+```typescript
+import axios from 'axios';
+
+// `router` is your previously defined one-schema router.
+const client = router.client(
+  axios.create({
+    baseURL: 'https://my.api.com/',
+    headers: {
+      // ...any needed headers e.g. LifeOmic-Account
+    },
+  }),
+);
+
+// client is now a type-safe client for the API e.g.:
+await client.createItem({ message: 'some-message' });
+
+const response = await client.getItemById({ id: 'some-id' });
+
+response.data; // { id: 'some-id', message: 'some-message' }
+```
+
+#### From a Different Project
 
 To generate a type-safe client for this new API, we need to:
 

@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { writeFileSync } from 'fs';
 import { format } from 'prettier';
 import Koa from 'koa';
@@ -11,12 +12,14 @@ import { useServiceClient } from './test-utils';
 
 const testGeneratedFile = (ext: string) => `${__dirname}/test-generated${ext}`;
 
-const generateAndFormat = (input: GenerateAxiosClientInput) =>
-  generateAxiosClient(input).then((source) => ({
-    typescript: format(source.typescript, { parser: 'typescript' }),
-  }));
+const generateAndFormat = async (input: GenerateAxiosClientInput) => {
+  const source = await generateAxiosClient(input);
+  return {
+    typescript: await format(source.typescript, { parser: 'typescript' }),
+  };
+};
 
-const mockMiddleware = jest.fn();
+const mockMiddleware = vi.fn();
 
 /**
  * We use an actual HTTP server to help with assertions. Why: this
@@ -203,7 +206,7 @@ describe('integration tests', () => {
   });
 
   test('pagination', async () => {
-    const requestSpy = jest.spyOn(client.client, 'request');
+  const requestSpy = vi.spyOn(client.client, 'request');
 
     mockMiddleware
       .mockImplementationOnce((ctx) => {

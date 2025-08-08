@@ -56,7 +56,6 @@ export const toOpenAPISpec = (
   // @ts-expect-error TS detects a mismatch between the JSONSchema types
   // between openapi-types and json-schema. Ignore and assume everything
   // is cool.
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   openAPIDocument.components!.schemas = Resources;
 
   for (const [
@@ -130,10 +129,8 @@ export const toOpenAPISpec = (
     }
 
     const openAPIPath = toOpenAPIPathParts(path);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     openAPIDocument.paths![openAPIPath] = {
       // Spread existing, in case there are multiple methods for a single route.
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       ...openAPIDocument.paths![openAPIPath],
       [method.toLowerCase()]: operation,
     };

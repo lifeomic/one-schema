@@ -22,7 +22,7 @@ const getPrettierParser = (outputFilename: string): BuiltInParserName => {
   return 'typescript';
 };
 
-const writeGeneratedFile = (
+const writeGeneratedFile = async (
   filepath: string,
   content: string,
   options: { format: boolean },
@@ -31,7 +31,7 @@ const writeGeneratedFile = (
   writeFileSync(
     filepath,
     options.format
-      ? format(content, { parser: getPrettierParser(filepath) })
+      ? await format(content, { parser: getPrettierParser(filepath) })
       : content,
     { encoding: 'utf-8' },
   );
@@ -46,7 +46,6 @@ const parseAssumptions = (input: string): SchemaAssumptions => {
   const containsOnlyValidAssumptionKeys = (
     arr: string[],
   ): arr is (keyof SchemaAssumptions)[] =>
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     arr.every((value) => VALID_ASSUMPTION_KEYS.includes(value as any));
 
   if (input === 'all') {
@@ -105,127 +104,133 @@ const getCommonOptions = (argv: yargs.Argv) =>
       default: 'all',
     });
 
-const program = yargs(process.argv.slice(2))
-  .command(
-    'generate-axios-client',
-    'Generates an Axios client using the specified schema and options.',
-    (y) =>
-      getCommonOptions(y).option('name', {
-        type: 'string',
-        description: 'The name of the generated client class.',
-        demandOption: true,
-      }),
-    async (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
-      const output = await generateAxiosClient({
-        spec,
-        outputClass: argv.name,
-      });
-
-      writeGeneratedFile(argv.output, output.typescript, {
-        format: argv.format,
-      });
-    },
-  )
-  .command(
-    'generate-api-types',
-    'Generates API types using the specified schema and options.',
-    getCommonOptions,
-    async (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
-
-      const output = await generateAPITypes({ spec });
-
-      writeGeneratedFile(argv.output, output, { format: argv.format });
-    },
-  )
-  .command(
-    'generate-open-api-spec',
-    'Generates an OpenAPI v3.1.0 spec using the specified schema and options.',
-    (y) =>
-      getCommonOptions(y)
-        .option('apiVersion', {
+export const createProgram = (argv: readonly string[]) =>
+  yargs(argv)
+    .command(
+      'generate-axios-client',
+      'Generates an Axios client using the specified schema and options.',
+      (y) =>
+        getCommonOptions(y).option('name', {
           type: 'string',
-          description: 'The current version of this API schema.',
-          default: '1.0.0',
-        })
-        .option('apiTitle', {
-          type: 'string',
-          description: 'The API title.',
+          description: 'The name of the generated client class.',
           demandOption: true,
         }),
-    (argv) => {
-      const spec = loadSchemaFromFile(
-        argv.schema,
-        parseAssumptions(argv.assumptions),
-      );
+      async (argv) => {
+        const spec = loadSchemaFromFile(
+          argv.schema,
+          parseAssumptions(argv.assumptions),
+        );
+        const output = await generateAxiosClient({
+          spec,
+          outputClass: argv.name,
+        });
 
-      const openAPISpec = toOpenAPISpec(spec, {
-        info: { version: argv.apiVersion, title: argv.apiTitle },
-      });
+        await writeGeneratedFile(argv.output, output.typescript, {
+          format: argv.format,
+        });
+      },
+    )
+    .command(
+      'generate-api-types',
+      'Generates API types using the specified schema and options.',
+      getCommonOptions,
+      async (argv) => {
+        const spec = loadSchemaFromFile(
+          argv.schema,
+          parseAssumptions(argv.assumptions),
+        );
 
-      const output =
-        argv.output.endsWith('.yml') || argv.output.endsWith('.yaml')
-          ? dump(openAPISpec, {
-              /**
-               * Without this, js-yaml will default to a line width of 80 and use
-               * the "folded" multiline style. While this should not actually affect
-               * serialization or deserialization, it can result in ugly-looking output
-               * that contains newlines in unexpected places.
-               *
-               * This option allows us to preserve the original developer's newlines.
-               */
-              lineWidth: -1,
-            })
-          : JSON.stringify(openAPISpec, null, 2);
+        const output = await generateAPITypes({ spec });
 
-      writeGeneratedFile(argv.output, output, { format: argv.format });
-    },
-  )
-  .command(
-    'fetch-remote-schema',
-    'Fetches a schema from a remote service via introspection.',
-    (y) =>
-      y
-        .option('from', {
-          type: 'string',
-          description: 'The url of the remote schema.',
-          demandOption: true,
-        })
-        .option('output', {
-          type: 'string',
-          description: 'A filepath for the fetched schema.',
-          demandOption: true,
-        }),
-    async (argv) => {
-      const result = await fetchRemoteSchema({ url: argv.from });
+        await writeGeneratedFile(argv.output, output, { format: argv.format });
+      },
+    )
+    .command(
+      'generate-open-api-spec',
+      'Generates an OpenAPI v3.1.0 spec using the specified schema and options.',
+      (y) =>
+        getCommonOptions(y)
+          .option('apiVersion', {
+            type: 'string',
+            description: 'The current version of this API schema.',
+            default: '1.0.0',
+          })
+          .option('apiTitle', {
+            type: 'string',
+            description: 'The API title.',
+            demandOption: true,
+          }),
+      async (argv) => {
+        const spec = loadSchemaFromFile(
+          argv.schema,
+          parseAssumptions(argv.assumptions),
+        );
 
-      writeGeneratedFile(
-        argv.output,
-        JSON.stringify(
-          {
-            // Re-declaring here so that `serviceVersion` will end up at the top of the
-            // file, and is clearly visible in source control.
-            serviceVersion: result.serviceVersion,
-            schema: result.schema,
-          },
-          null,
-          2,
-        ),
-        { format: false },
-      );
-    },
-  )
-  .demandCommand()
-  .strict();
+        const openAPISpec = toOpenAPISpec(spec, {
+          info: { version: argv.apiVersion, title: argv.apiTitle },
+        });
 
-program.parseAsync().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+        const output =
+          argv.output.endsWith('.yml') || argv.output.endsWith('.yaml')
+            ? dump(openAPISpec, {
+                /**
+                 * Without this, js-yaml will default to a line width of 80 and use
+                 * the "folded" multiline style. While this should not actually affect
+                 * serialization or deserialization, it can result in ugly-looking output
+                 * that contains newlines in unexpected places.
+                 *
+                 * This option allows us to preserve the original developer's newlines.
+                 */
+                lineWidth: -1,
+              })
+            : JSON.stringify(openAPISpec, null, 2);
+
+        await writeGeneratedFile(argv.output, output, { format: argv.format });
+      },
+    )
+    .command(
+      'fetch-remote-schema',
+      'Fetches a schema from a remote service via introspection.',
+      (y) =>
+        y
+          .option('from', {
+            type: 'string',
+            description: 'The url of the remote schema.',
+            demandOption: true,
+          })
+          .option('output', {
+            type: 'string',
+            description: 'A filepath for the fetched schema.',
+            demandOption: true,
+          }),
+      async (argv) => {
+        const result = await fetchRemoteSchema({ url: argv.from });
+
+        await writeGeneratedFile(
+          argv.output,
+          JSON.stringify(
+            {
+              // Re-declaring here so that `serviceVersion` will end up at the top of the
+              // file, and is clearly visible in source control.
+              serviceVersion: result.serviceVersion,
+              schema: result.schema,
+            },
+            null,
+            2,
+          ),
+          { format: false },
+        );
+      },
+    )
+    .demandCommand()
+    .strict()
+    .exitProcess(false);
+
+if (require.main === module) {
+  createProgram(process.argv.slice(2))
+    .parseAsync()
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    });
+}

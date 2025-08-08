@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { writeFileSync } from 'fs';
 import { dump } from 'js-yaml';
 import { tmpNameSync } from 'tmp';
@@ -11,7 +12,7 @@ import {
 import { IntrospectionResponse } from './types';
 
 beforeEach(() => {
-  jest.spyOn(console, 'log').mockReturnValue(void 0);
+  vi.spyOn(console, 'log').mockReturnValue(void 0 as any);
 });
 
 describe('assumptions', () => {

@@ -1,4 +1,5 @@
 import { Server } from 'http';
+import { beforeEach, afterEach } from 'vitest';
 import axios, { AxiosInstance } from 'axios';
 import Koa from 'koa';
 
@@ -21,7 +22,6 @@ export const useServiceClient = ({ service }: UseSchemaClientOptions) => {
     context.client = axios.create({
       // In tests, we should always explicitly assert 200.
       validateStatus: () => true,
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       baseURL: `http://127.0.0.1:${(server.address() as any).port}`,
     });
   });

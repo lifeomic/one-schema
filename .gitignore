@@ -4,3 +4,4 @@ coverage
 dist/
 src/test-schema.json
 src/test-generated.*
+.tool-versions
