@@ -1,9 +1,10 @@
 import { JSONSchema4 } from 'json-schema';
 import { compile } from 'json-schema-to-typescript';
 import { OneSchemaDefinition } from '.';
+import { deepCopy } from './deep-copy';
 import { getPathParams } from './meta-schema';
 
-export const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
+export { deepCopy } from './deep-copy';
 
 /**
  * Generates input + output types for the provided schema. Returns a

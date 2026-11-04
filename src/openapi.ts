@@ -1,6 +1,6 @@
 import type { OpenAPIV3 } from 'openapi-types';
 import type { OneSchemaDefinition } from './types';
-import { deepCopy } from './generate-endpoints';
+import { deepCopy } from './deep-copy';
 import { validateSchema } from './meta-schema';
 import { JSONSchema4 } from 'json-schema';
 
