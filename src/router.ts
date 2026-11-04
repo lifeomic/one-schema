@@ -196,7 +196,21 @@ export const convertRouterSchemaToJSONSchemaStyle = <Schema extends ZodSchema>(
       Description: definition.description,
       // The JSONSchema types are very slightly different between packages. We just
       // trust that the interop will work fine, and use "as any" here.
-      Request: z.toJSONSchema(definition.request, { target: 'draft-7' }) as any,
+      // Requests describe what callers send, so fields with a default are
+      // optional. Input mode also leaves plain objects open to extra keys;
+      // keep them closed so generated request types reject unknown fields.
+      Request: z.toJSONSchema(definition.request, {
+        target: 'draft-7',
+        io: 'input',
+        override: ({ zodSchema, jsonSchema }) => {
+          if (
+            zodSchema._zod.def.type === 'object' &&
+            jsonSchema.additionalProperties === undefined
+          ) {
+            jsonSchema.additionalProperties = false;
+          }
+        },
+      }) as any,
       Response: z.toJSONSchema(definition.response, {
         target: 'draft-7',
       }) as any,
