@@ -9,6 +9,11 @@ jobs:
   main:
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NPM_TOKEN: ${{ secrets.LIFEOMIC_NPM_TOKEN }}
@@ -16,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - name: Test and Build
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
