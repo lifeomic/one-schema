@@ -640,6 +640,51 @@ describe('introspection', () => {
     });
   });
 
+  test('request fields with a default are optional, while response fields with a default are required', async () => {
+    const withDefault = z.object({
+      pageSize: z.number().default(100),
+      filter: z.object({ status: z.string() }),
+      extras: z.looseObject({}),
+    });
+
+    const router = OneSchemaRouter.create({
+      using: new Router(),
+      introspection: {
+        route: '/private/introspection',
+        serviceVersion: '123',
+      },
+    }).declare({
+      route: 'POST /items',
+      name: 'listItems',
+      request: withDefault,
+      response: withDefault,
+    });
+
+    const { client } = serve(router);
+
+    const introspectionResult = await client.get('/private/introspection');
+
+    const { Request, Response } =
+      introspectionResult.data.schema.Endpoints['POST /items'];
+    expect(Request).toStrictEqual({
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      properties: {
+        pageSize: { type: 'number', default: 100 },
+        filter: {
+          type: 'object',
+          properties: { status: { type: 'string' } },
+          required: ['status'],
+          additionalProperties: false,
+        },
+        extras: { type: 'object', properties: {}, additionalProperties: {} },
+      },
+      required: ['filter', 'extras'],
+      additionalProperties: false,
+    });
+    expect(Response.required).toStrictEqual(['pageSize', 'filter', 'extras']);
+  });
+
   it('can generate an OpenAPI schema', async () => {
     const { client } = setup(() =>
       OneSchemaRouter.create({
