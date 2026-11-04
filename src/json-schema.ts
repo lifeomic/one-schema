@@ -1,5 +1,5 @@
 import { JSONSchema4 } from 'json-schema';
-import { deepCopy } from './generate-endpoints';
+import { deepCopy } from './deep-copy';
 
 /**
  * Applies a `transform` to every node of a provided `root` JSON Schema.

@@ -3,7 +3,7 @@ import Ajv from 'ajv';
 import { load } from 'js-yaml';
 import type { JSONSchema4 } from 'json-schema';
 import { OneSchemaDefinition } from '.';
-import { deepCopy } from './generate-endpoints';
+import { deepCopy } from './deep-copy';
 import { transformJSONSchema, withResolvedDefinitions } from './json-schema';
 
 export const getPathParams = (name: string) =>
